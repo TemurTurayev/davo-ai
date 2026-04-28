@@ -227,9 +227,14 @@ export function ProfileScreen({ locale }: { locale: string }) {
           </div>
         </section>
 
-        {/* Help & legal */}
+        {/* Face enrollment + Help */}
         <section className="mb-5">
           <div className="card divide-y divide-[var(--color-slate-200)]">
+            <LinkRow
+              icon={<Pill size={18} />}
+              label={t("Yuzni ro'yxatdan o'tkazish", "Регистрация лица (Face ID)", "Enroll face (Face ID)")}
+              href={`/${locale}/enroll`}
+            />
             <LinkRow
               icon={<Shield size={18} />}
               label={t("Maxfiylik", "Конфиденциальность", "Privacy")}

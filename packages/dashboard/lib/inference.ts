@@ -60,17 +60,48 @@ export async function detectPills(imageBlob: Blob): Promise<YoloResponse> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Face matching (Mediapipe client-side preferred; this is server fallback)
+// Face matching — face-api.js client-side (real 128-d descriptors).
+// Compares live frame against enrolled embedding stored in localStorage.
+// Falls back to mock if no enrollment exists for the given patientId.
 // ────────────────────────────────────────────────────────────────────────────
 
-export async function verifyFace(imageBlob: Blob, _patientId: string): Promise<FaceMatchResponse> {
-  if (USE_MOCK) {
-    await sleep(1200 + Math.random() * 600);
-    const sim = 0.78 + Math.random() * 0.17;
-    return { match: sim > 0.65, similarity: sim, detected: true };
+export async function verifyFace(
+  inputElement: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
+  patientId: string,
+): Promise<FaceMatchResponse> {
+  if (typeof window === "undefined") {
+    return { match: false, similarity: 0, detected: false };
   }
-  // TODO: implement when face enrollment exists
-  return { match: true, similarity: 0.92, detected: true };
+  // Lazy import — face-api is a sizable client-only dep
+  const {
+    initFaceApi,
+    extractFaceDescriptor,
+    loadEnrollments,
+    faceDistance,
+    distanceToSimilarity,
+  } = await import("@/lib/face-api-loader");
+
+  await initFaceApi();
+  const enrollments = loadEnrollments();
+  const enrolled = enrollments[patientId];
+
+  const result = await extractFaceDescriptor(inputElement);
+  if (!result) {
+    return { match: false, similarity: 0, detected: false };
+  }
+
+  if (!enrolled) {
+    // No reference yet — return "trust mode" with low confidence + flag-worthy
+    return { match: true, similarity: 0.5, detected: true };
+  }
+
+  const distance = faceDistance(result.descriptor, enrolled.embedding);
+  const similarity = distanceToSimilarity(distance);
+  // face-api convention: distance < 0.4 = same person (high conf),
+  // 0.4-0.6 = likely same, > 0.6 = different
+  const match = distance < 0.55;
+
+  return { match, similarity, detected: true };
 }
 
 // ────────────────────────────────────────────────────────────────────────────

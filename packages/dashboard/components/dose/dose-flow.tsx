@@ -305,14 +305,26 @@ export function DoseFlow({ locale }: { locale: string }) {
       let confidence: number | null = null;
 
       if (currentStep === "face_id") {
-        const r = await verifyFace(frame, prescription?.patientId ?? "demo");
+        // verifyFace now uses face-api.js client-side, requires the video element
+        const video = videoRef.current;
+        if (!video || video.videoWidth === 0) {
+          throw new Error("Video element not ready");
+        }
+        const r = await verifyFace(video, prescription?.patientId ?? "demo-patient-1");
         confidence = r.similarity;
         success = r.match;
-        if (!success) {
+        setAiVerdict((v) => ({ ...v, confidence: r.similarity }));
+        if (!r.detected) {
           setRetryHint(t(
-            "Yorug'roq joyga o'ting va kameraga qarang",
-            "Перейдите в светлое место и посмотрите в камеру",
-            "Move to better light and look at camera",
+            "Yuz topilmadi — kameraga aniqroq qarang",
+            "Лицо не найдено — посмотрите чётче",
+            "No face detected — look directly at camera",
+          ));
+        } else if (!success) {
+          setRetryHint(t(
+            "Bu boshqa odam ko'rinadi — qaytadan urining",
+            "Похоже, это другой человек — попробуйте снова",
+            "Looks like a different person — try again",
           ));
         }
       } else if (currentStep === "show_box" || currentStep === "show_pills") {
@@ -585,23 +597,33 @@ export function DoseFlow({ locale }: { locale: string }) {
 
       {/* ACTION BUTTON */}
       <section className="px-3 pt-2 shrink-0">
-        {/* Show drugs hint */}
+        {/* Show drugs hint + reference photo of Ascorutin (demo) */}
         {(currentStep === "show_pills" || currentStep === "show_box") && (
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-2 mb-2">
-            <p className="text-[9px] uppercase font-bold text-slate-400 mb-1.5 font-mono">
-              {t("Bugungi dozalar", "Сегодняшние дозы", "Today's doses")}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {prescription.doses[0].drugs.map((drug, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-white shadow-sm"
-                  style={{ backgroundColor: DRUG_LABELS[drug.drugCode].color }}
-                >
-                  <Pill size={10} />
-                  {DRUG_LABELS[drug.drugCode].abbr} · {drug.count}×{drug.dosageMg}mg
-                </span>
-              ))}
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-2 mb-2 flex gap-2">
+            {/* Reference photo — only when ascorutin demo */}
+            {prescription.doses[0].drugs.some((d) => d.drugCode === "ascorutin_demo") && (
+              <img
+                src="/pill-references/ascorutin-n50/box-front-lekhim.jpg"
+                alt="Ascorutin reference"
+                className="w-16 h-16 object-cover rounded-lg shrink-0 border border-slate-600"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] uppercase font-bold text-slate-400 mb-1.5 font-mono">
+                {t("Bugungi dozalar", "Сегодняшние дозы", "Today's doses")}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {prescription.doses[0].drugs.map((drug, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-white shadow-sm"
+                    style={{ backgroundColor: DRUG_LABELS[drug.drugCode].color }}
+                  >
+                    <Pill size={10} />
+                    {DRUG_LABELS[drug.drugCode].abbr} · {drug.count}×{drug.dosageMg}mg
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}
