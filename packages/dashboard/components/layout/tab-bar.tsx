@@ -22,8 +22,8 @@ export function TabBar({ locale }: TabBarProps) {
   ] as const;
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 backdrop-blur border-t border-[var(--color-slate-200)] tg-safe-bottom z-20">
-      <div className="flex items-center justify-around">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-[var(--color-slate-200)] tg-safe-bottom z-20 shadow-lg">
+      <div className="flex items-center justify-around max-w-2xl mx-auto">
         {tabs.map((tab) => {
           const isActive = pathname.startsWith(tab.href);
           const Icon = tab.icon;

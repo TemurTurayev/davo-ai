@@ -62,10 +62,7 @@ export function RulesMonitor({ locale, layout = "side" }: { locale: string; layo
   }
 
   return (
-    <aside className="space-y-2">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-slate-500)] mb-2 px-1">
-        {lang === "uz" ? "Holat" : lang === "ru" ? "Статус" : "Status"}
-      </p>
+    <aside className="space-y-1.5">
       {rules.map((r) => {
         const Icon = r.Icon;
         return (
@@ -74,25 +71,25 @@ export function RulesMonitor({ locale, layout = "side" }: { locale: string; layo
             animate={r.status !== "ok" ? { x: [0, 2, -2, 0] } : {}}
             transition={{ duration: 0.4 }}
             className={cn(
-              "flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white shadow-sm border-l-4 transition-all",
-              r.status === "ok" && "border-l-transparent",
+              "flex items-center gap-2 px-2.5 py-2 rounded-lg border-l-4 transition-all bg-slate-800/60",
+              r.status === "ok" && "border-l-emerald-500/70",
               r.status === "warning" && "border-l-amber-400",
               r.status === "violated" && "border-l-amber-600",
             )}
           >
             <Icon
-              size={14}
+              size={13}
               className={cn(
-                r.status === "ok" && "text-[var(--color-success)]",
-                r.status === "warning" && "text-amber-500",
-                r.status === "violated" && "text-amber-700",
+                r.status === "ok" && "text-emerald-400",
+                r.status === "warning" && "text-amber-400",
+                r.status === "violated" && "text-amber-500",
               )}
             />
-            <span className="text-xs font-medium flex-1 truncate">
+            <span className="text-[11px] font-medium flex-1 truncate text-slate-200">
               {r[lang]}
             </span>
             {r.status === "ok" && (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-[var(--color-success)]">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-emerald-400">
                 <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}

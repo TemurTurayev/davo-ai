@@ -115,7 +115,7 @@ export function HeatmapCalendar({ locale }: { locale: string }) {
   const progressPct = Math.min(100, Math.round((dayN / totalDays) * 100));
 
   return (
-    <main className="px-5 pt-6 pb-6">
+    <main className="max-w-2xl mx-auto px-5 pt-6 pb-6">
       {/* Treatment progress card */}
       <section className="card mb-5">
         <div className="flex items-center gap-3 mb-3">

@@ -467,221 +467,232 @@ export function DoseFlow({ locale }: { locale: string }) {
 
   return (
     <main className="min-h-screen flex flex-col bg-slate-950 text-white relative">
-      {/* TOP BAR */}
-      <header className="z-30 px-4 pt-3 pb-2 flex items-center justify-between bg-slate-900/95 backdrop-blur border-b border-slate-800 shrink-0">
+      {/* TOP BAR — full width */}
+      <header className="z-30 px-6 py-3 flex items-center justify-between bg-slate-900/95 backdrop-blur border-b border-slate-800 shrink-0">
         <button
           onClick={cancelDose}
-          className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center"
+          className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center"
           aria-label="cancel"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
-        <div className="text-center">
-          <p className="text-[9px] uppercase tracking-wider font-bold text-slate-400 font-mono">
-            {t("AI VERIFIED INTAKE", "ПРИЁМ ПОД AI", "AI VERIFIED INTAKE")}
-          </p>
-          <p className="text-xs font-bold tabular font-mono">
-            STEP {stepIdx + 1}/{totalSteps}
-          </p>
+        <div className="text-center flex items-center gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 font-mono">
+              {t("AI VERIFIED INTAKE", "ПРИЁМ ПОД AI", "AI VERIFIED INTAKE")}
+            </p>
+            <p className="text-sm font-bold tabular font-mono">
+              STEP {stepIdx + 1} / {totalSteps}
+            </p>
+          </div>
         </div>
         <button
           onClick={() => alert(t("Yordam tez orada", "Помощь скоро", "Help coming soon"))}
-          className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center"
+          className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center"
           aria-label="help"
         >
-          <HelpCircle size={16} />
+          <HelpCircle size={18} />
         </button>
       </header>
 
-      {/* INSTRUCTION CARD — always visible */}
-      <section className="z-20 px-3 pt-3 pb-2 shrink-0">
+      {/* CONTENT WRAPPER (max-w-6xl centered) */}
+      <div className="flex-1 max-w-6xl w-full mx-auto px-4 py-4 flex flex-col gap-3">
+        {/* INSTRUCTION CARD — full width */}
         <motion.div
           key={currentStep}
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg"
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl px-5 py-4 flex items-center gap-4 shadow-lg"
         >
-          <div className="w-10 h-10 rounded-xl bg-[var(--color-brand)]/20 text-[var(--color-brand)] flex items-center justify-center shrink-0">
-            <StepIcon size={20} />
+          <div className="w-12 h-12 rounded-2xl bg-[var(--color-brand)]/20 text-[var(--color-brand)] flex items-center justify-center shrink-0">
+            <StepIcon size={24} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-heading font-bold text-sm leading-tight">
+            <p className="font-heading font-bold text-base leading-tight">
               {meta[`title${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "titleUz" | "titleRu" | "titleEn"]}
             </p>
-            <p className="text-xs text-slate-400 mt-0.5 truncate">
+            <p className="text-sm text-slate-400 mt-0.5">
               {retryHint ?? meta[`hint${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "hintUz" | "hintRu" | "hintEn"]}
             </p>
           </div>
-        </motion.div>
-      </section>
-
-      {/* CAMERA VIEWPORT — square 1:1 (matches face overlay coords) */}
-      <section className="relative mx-3 rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 shrink-0 aspect-square">
-        {/* Mirrored video for selfie UX (AI receives un-mirrored frame via canvas) */}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-          style={{ transform: "scaleX(-1)" }}
-        />
-        <canvas ref={canvasRef} className="hidden" />
-
-        {/* Detection overlay */}
-        {detectionFrame && (
-          <DetectionOverlay
-            bboxes={detectionFrame.bboxes}
-            faceLandmarks={detectionFrame.faceLandmarks}
-            scanProgress={detectionFrame.scanProgress}
-            isScanning={detectionFrame.phase === "scanning" || stepStatus === "checking"}
-            mirrored
-          />
-        )}
-
-        {/* Top-left REC + step badge */}
-        <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
-          <div className="px-2.5 py-1 rounded-full bg-black/65 backdrop-blur text-white text-[10px] font-bold font-mono flex items-center gap-1.5">
-            <span className="relative flex w-1.5 h-1.5">
-              <span className="absolute inset-0 rounded-full bg-red-500 animate-ping" />
-              <span className="relative rounded-full bg-red-500 w-1.5 h-1.5" />
-            </span>
-            REC
-          </div>
-          {stepStatus === "checking" && (
-            <div className="px-2.5 py-1 rounded-full bg-cyan-500 text-white text-[10px] font-bold font-mono flex items-center gap-1.5">
-              <Brain size={11} className="animate-pulse" />
-              ANALYZING
-            </div>
-          )}
-          {stepStatus === "success" && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold font-mono flex items-center gap-1.5"
-            >
-              <Check size={11} strokeWidth={3} />
-              VERIFIED
-            </motion.div>
-          )}
-          {stepStatus === "retry" && (
-            <div className="px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold font-mono flex items-center gap-1.5">
-              <AlertCircle size={11} />
-              RETRY
-            </div>
-          )}
-        </div>
-
-        {/* Bottom-right "looking at" hint per step */}
-        <div className="absolute bottom-2 right-2 pointer-events-none">
-          <div className="px-2 py-1 rounded-md bg-black/55 backdrop-blur text-white text-[9px] font-mono flex items-center gap-1">
-            <Eye size={10} />
+          <div className="hidden md:block px-3 py-1.5 rounded-md bg-slate-900 text-slate-400 text-[10px] font-mono border border-slate-700 shrink-0">
             {meta.modelLabel}
           </div>
-        </div>
-      </section>
+        </motion.div>
 
-      {/* DETECTION LOG */}
-      <section className="px-3 pt-2 shrink-0">
-        <DetectionLog
-          entries={aggregatedLog}
-          confidence={detectionFrame?.liveConfidence ?? 0}
-          modelName={meta.modelLabel}
-        />
-      </section>
-
-      {/* PHASE INDICATOR */}
-      <section className="px-3 pt-2 shrink-0">
-        <PhaseIndicator currentStep={currentStep} locale={locale} />
-      </section>
-
-      {/* ACTION BUTTON */}
-      <section className="px-3 pt-2 shrink-0">
-        {/* Show drugs hint + reference photo of Ascorutin (demo) */}
-        {(currentStep === "show_pills" || currentStep === "show_box") && (
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-2 mb-2 flex gap-2">
-            {/* Reference photo — only when ascorutin demo */}
-            {prescription.doses[0].drugs.some((d) => d.drugCode === "ascorutin_demo") && (
-              <img
-                src="/pill-references/ascorutin-n50/box-front-lekhim.jpg"
-                alt="Ascorutin reference"
-                className="w-16 h-16 object-cover rounded-lg shrink-0 border border-slate-600"
+        {/* GRID — 2 columns on lg+, single column on mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-3 flex-1 min-h-0">
+          {/* LEFT: Camera + phase + button */}
+          <div className="flex flex-col gap-3 min-h-0">
+            {/* CAMERA VIEWPORT — square */}
+            <section className="relative rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 aspect-square mx-auto w-full max-w-[640px]">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+                style={{ transform: "scaleX(-1)" }}
               />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-[9px] uppercase font-bold text-slate-400 mb-1.5 font-mono">
-                {t("Bugungi dozalar", "Сегодняшние дозы", "Today's doses")}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {prescription.doses[0].drugs.map((drug, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-white shadow-sm"
-                    style={{ backgroundColor: DRUG_LABELS[drug.drugCode].color }}
-                  >
-                    <Pill size={10} />
-                    {DRUG_LABELS[drug.drugCode].abbr} · {drug.count}×{drug.dosageMg}mg
+              <canvas ref={canvasRef} className="hidden" />
+
+              {/* Detection overlay */}
+              {detectionFrame && (
+                <DetectionOverlay
+                  bboxes={detectionFrame.bboxes}
+                  faceLandmarks={detectionFrame.faceLandmarks}
+                  scanProgress={detectionFrame.scanProgress}
+                  isScanning={detectionFrame.phase === "scanning" || stepStatus === "checking"}
+                  mirrored
+                />
+              )}
+
+              {/* Status badges */}
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                <div className="px-3 py-1.5 rounded-full bg-black/70 backdrop-blur text-white text-xs font-bold font-mono flex items-center gap-1.5">
+                  <span className="relative flex w-2 h-2">
+                    <span className="absolute inset-0 rounded-full bg-red-500 animate-ping" />
+                    <span className="relative rounded-full bg-red-500 w-2 h-2" />
                   </span>
-                ))}
+                  REC
+                </div>
+                {stepStatus === "checking" && (
+                  <div className="px-3 py-1.5 rounded-full bg-cyan-500 text-white text-xs font-bold font-mono flex items-center gap-1.5">
+                    <Brain size={13} className="animate-pulse" />
+                    ANALYZING
+                  </div>
+                )}
+                {stepStatus === "success" && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="px-3 py-1.5 rounded-full bg-emerald-500 text-white text-xs font-bold font-mono flex items-center gap-1.5"
+                  >
+                    <Check size={13} strokeWidth={3} />
+                    VERIFIED
+                  </motion.div>
+                )}
+                {stepStatus === "retry" && (
+                  <div className="px-3 py-1.5 rounded-full bg-amber-500 text-white text-xs font-bold font-mono flex items-center gap-1.5">
+                    <AlertCircle size={13} />
+                    RETRY
+                  </div>
+                )}
               </div>
+
+              {/* Bottom-right model label */}
+              <div className="absolute bottom-3 right-3 pointer-events-none">
+                <div className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur text-white text-[10px] font-mono flex items-center gap-1.5">
+                  <Eye size={11} />
+                  {meta.modelLabel}
+                </div>
+              </div>
+            </section>
+
+            {/* PHASE INDICATOR */}
+            <PhaseIndicator currentStep={currentStep} locale={locale} />
+
+            {/* ACTION BUTTON */}
+            <div>
+              {currentStep === "swallow" ? (
+                <LongPressButton
+                  label={t("Yutdim — bosib turing", "Я проглотил — удерживайте", "I've swallowed — hold")}
+                  onComplete={() => setLongPressProgress(100)}
+                  progress={longPressProgress}
+                  setProgress={setLongPressProgress}
+                  disabled={stepStatus === "checking"}
+                />
+              ) : currentStep === "mouth_check" ? (
+                <button
+                  onClick={runStepCheck}
+                  disabled={stepStatus === "checking"}
+                  className="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-50"
+                >
+                  <Check size={20} strokeWidth={2.5} />
+                  {stepStatus === "checking"
+                    ? t("Tekshirilmoqda…", "Проверяю…", "Checking…")
+                    : t("Og'iz bo'sh — yakunlash", "Рот пуст — завершить", "Mouth empty — finish")}
+                </button>
+              ) : (
+                <button
+                  onClick={runStepCheck}
+                  disabled={stepStatus === "checking"}
+                  className={cn(
+                    "w-full h-14 rounded-2xl font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-60",
+                    stepStatus === "retry"
+                      ? "bg-amber-500 hover:bg-amber-400 text-white"
+                      : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-dark)] text-white",
+                  )}
+                >
+                  {stepStatus === "checking" ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      {t("AI tekshirmoqda…", "ИИ проверяет…", "AI checking…")}
+                    </>
+                  ) : stepStatus === "retry" ? (
+                    <>
+                      <AlertCircle size={20} />
+                      {t("Qayta urining", "Попробовать снова", "Try again")}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={20} />
+                      {t("Tayyor — tekshiruv", "Готово — проверить", "Ready — verify")}
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
-        )}
 
-        {currentStep === "swallow" ? (
-          <LongPressButton
-            label={t("Yutdim — bosib turing", "Я проглотил — удерживайте", "I've swallowed — hold")}
-            onComplete={() => setLongPressProgress(100)}
-            progress={longPressProgress}
-            setProgress={setLongPressProgress}
-            disabled={stepStatus === "checking"}
-          />
-        ) : currentStep === "mouth_check" ? (
-          <button
-            onClick={runStepCheck}
-            disabled={stepStatus === "checking"}
-            className="w-full h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-heading font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-50"
-          >
-            <Check size={18} strokeWidth={2.5} />
-            {stepStatus === "checking"
-              ? t("Tekshirilmoqda…", "Проверяю…", "Checking…")
-              : t("Og'iz bo'sh — yakunlash", "Рот пуст — завершить", "Mouth empty — finish")}
-          </button>
-        ) : (
-          <button
-            onClick={runStepCheck}
-            disabled={stepStatus === "checking"}
-            className={cn(
-              "w-full h-12 rounded-2xl font-heading font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-60",
-              stepStatus === "retry"
-                ? "bg-amber-500 hover:bg-amber-400 text-white"
-                : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-dark)] text-white",
-            )}
-          >
-            {stepStatus === "checking" ? (
-              <>
-                <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                {t("AI tekshirmoqda…", "ИИ проверяет…", "AI checking…")}
-              </>
-            ) : stepStatus === "retry" ? (
-              <>
-                <AlertCircle size={18} />
-                {t("Qayta urining", "Попробовать снова", "Try again")}
-              </>
-            ) : (
-              <>
-                <Sparkles size={18} />
-                {t("Tayyor — tekshiruv", "Готово — проверить", "Ready — verify")}
-              </>
-            )}
-          </button>
-        )}
-      </section>
+          {/* RIGHT: Side panel — detection log + drugs hint + rules monitor */}
+          <aside className="flex flex-col gap-3 min-h-0">
+            <DetectionLog
+              entries={aggregatedLog}
+              confidence={detectionFrame?.liveConfidence ?? 0}
+              modelName={meta.modelLabel}
+            />
 
-      {/* RULES MONITOR (compact) */}
-      <section className="px-3 py-2 mt-auto shrink-0">
-        <RulesMonitor locale={locale} layout="bottom" />
-      </section>
+            {/* Drugs hint + Ascorutin reference */}
+            {(currentStep === "show_pills" || currentStep === "show_box") && (
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl p-3">
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 font-mono">
+                  {t("Bugungi dozalar", "Сегодняшние дозы", "Today's doses")}
+                </p>
+                <div className="flex gap-3">
+                  {prescription.doses[0].drugs.some((d) => d.drugCode === "ascorutin_demo") && (
+                    <img
+                      src="/pill-references/ascorutin-n50/box-front-lekhim.jpg"
+                      alt="Ascorutin reference"
+                      className="w-20 h-20 object-cover rounded-lg shrink-0 border border-slate-600"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0 flex flex-wrap gap-1.5 content-start">
+                    {prescription.doses[0].drugs.map((drug, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm h-fit"
+                        style={{ backgroundColor: DRUG_LABELS[drug.drugCode].color }}
+                      >
+                        <Pill size={11} />
+                        {DRUG_LABELS[drug.drugCode].abbr} · {drug.count}×{drug.dosageMg}mg
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Rules monitor (vertical) */}
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-3">
+              <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 font-mono">
+                {t("Qoidalar holati", "Соблюдение правил", "Rules status")}
+              </p>
+              <RulesMonitor locale={locale} layout="side" />
+            </div>
+          </aside>
+        </div>
+      </div>
     </main>
   );
 }

@@ -13,10 +13,10 @@ export default async function PatientLayout({ children, params }: LayoutProps) {
   if (!isValidLocale(locale)) notFound();
   setRequestLocale(locale);
 
-  // Mobile-first: clamp to ~480px on desktop. Telegram Mini App ~360-420px wide.
+  // Desktop-first: full viewport width, individual screens choose own max-width.
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-slate-100)]">
-      <div className="flex-1 pb-20 max-w-md w-full mx-auto bg-[var(--color-bg-warm)] shadow-xl relative">
+    <div className="min-h-screen flex flex-col bg-[var(--color-bg-warm)]">
+      <div className="flex-1 pb-20 w-full">
         {children}
       </div>
       <TabBar locale={locale} />

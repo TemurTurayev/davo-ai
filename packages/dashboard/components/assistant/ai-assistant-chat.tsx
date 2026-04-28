@@ -113,7 +113,7 @@ export function AIAssistantChat({ locale }: { locale: string }) {
   };
 
   return (
-    <main className="bg-aurora min-h-screen flex flex-col relative">
+    <main className="bg-aurora min-h-screen flex flex-col relative max-w-2xl mx-auto w-full">
       {/* Header */}
       <header className="sticky top-0 z-10 px-5 py-3 flex items-center gap-3 bg-white/85 backdrop-blur shadow-sm">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-md">

@@ -99,7 +99,7 @@ export function TodayScreen({ locale }: { locale: string }) {
       <div className="orb orb-brand w-72 h-72 -top-20 -right-20 animate-float-slow" />
       <div className="orb orb-coral w-64 h-64 top-96 -left-16 animate-float-slow" style={{ animationDelay: "3s" }} />
 
-      <div className="relative z-10 px-5 pt-6 pb-6">
+      <div className="relative z-10 max-w-2xl mx-auto px-5 pt-6 pb-6">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -8 }}

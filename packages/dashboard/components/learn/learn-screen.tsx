@@ -261,7 +261,7 @@ export function LearnScreen({ locale }: { locale: string }) {
     <main className="bg-aurora min-h-screen relative">
       <div className="orb orb-teal w-64 h-64 -left-20 top-40 opacity-30" />
 
-      <div className="relative px-5 pt-6 pb-8 z-10">
+      <div className="relative max-w-2xl mx-auto px-5 pt-6 pb-8 z-10">
         <header className="mb-6">
           <h1 className="font-heading font-extrabold text-2xl mb-1">{titleMap[lang]}</h1>
           <p className="text-sm text-[var(--color-slate-500)]">{subMap[lang]}</p>

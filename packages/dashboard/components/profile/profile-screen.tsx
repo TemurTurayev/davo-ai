@@ -72,7 +72,7 @@ export function ProfileScreen({ locale }: { locale: string }) {
     <main className="bg-aurora min-h-screen relative pb-24">
       <div className="orb orb-brand w-72 h-72 -top-20 -right-20 animate-float-slow" />
 
-      <div className="relative z-10 px-5 pt-6 pb-6">
+      <div className="relative z-10 max-w-xl mx-auto px-5 pt-6 pb-6">
         {/* Hero — patient identity */}
         <GlassCard variant="brand" className="mb-5 p-6 text-center">
           <div className="w-20 h-20 rounded-full bg-white/25 backdrop-blur-md mx-auto mb-3 flex items-center justify-center text-white text-3xl font-heading font-extrabold">
