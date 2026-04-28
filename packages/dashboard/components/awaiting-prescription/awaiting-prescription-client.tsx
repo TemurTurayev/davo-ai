@@ -27,13 +27,27 @@ export function AwaitingPrescriptionClient({ locale }: { locale: string }) {
   const useDemoPrescription = () => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 14); // mid-treatment for demo
-    const prescription = buildPrescription({
+    const base = buildPrescription({
       protocolId: "ds-tb-2hrze-4hr",
       patientName: t("Sardor Toshmatov", "Сардор Тошматов", "Sardor Toshmatov"),
       patientId: "demo-patient-1",
       startDate,
       doctorName: t("Dr. Tursunov A.X.", "Др. Турсунов А.Х.", "Dr. A.Kh. Tursunov"),
     });
+    // Override with safe-to-swallow demo pill (Ascorutin) for hackathon presentation.
+    // Real treatment plan would use rifampicin/isoniazid/etc. — but we can't ask
+    // the demo participant to swallow real TB drugs on stage.
+    const prescription = {
+      ...base,
+      doses: [
+        {
+          ...base.doses[0],
+          drugs: [
+            { drugCode: "ascorutin_demo" as const, dosageMg: 50, count: 1 },
+          ],
+        },
+      ],
+    };
     setPrescription(prescription);
     router.push(`/${locale}/today`);
   };

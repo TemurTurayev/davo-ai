@@ -1,18 +1,20 @@
 "use client";
 
 /**
- * DoseFlow — the strict 9-step state machine with AI-watched dose-taking.
+ * DoseFlow — strict 9-step dose-taking with AI-watched verification.
  *
- * Architecture (per research synthesis):
- *  - 3 phases: Identify (face+box) → Verify (open+pills+closeup+glass) → Ingest (swallow+mouth)
- *  - AI auto-advances steps 1-7; step 8 (mouth check) requires AI + long-press confirm
- *  - Side-panel rules monitor (always-on; amber for violations, never red until session-end)
- *  - Failures: re-explain (different wording), retry on same step, never restart from step 1
- *  - Red flag: completion proceeds even if AI uncertain → doctor reviews
- *  - Camera always on; mock detection runs each step; production swaps in vast.ai endpoints
+ * Layout (top → bottom):
+ *  1. Top bar: cancel / step counter / help
+ *  2. Step instruction card — ALWAYS visible, never covered
+ *  3. Live camera viewport with detection overlay (45vh, fixed) — MIRRORED for selfie UX
+ *     Frame capture for AI uses canvas → un-mirrored frame goes to model
+ *  4. Detection log (terminal-style, shows AI reasoning live)
+ *  5. Phase indicator (3 dot clusters)
+ *  6. Action button (auto-advance / long-press for swallow)
+ *  7. Rules monitor (compact bottom strip)
  *
- * UX language per research: "Coach the action, not the person."
- *   "Box not visible yet" beats "You failed."
+ * Mock detections from `lib/mock-detections.ts` give realistic visualization
+ * even without vast.ai backend — bboxes evolve, scan lines move, log fills.
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -25,13 +27,20 @@ import {
   Sparkles,
   X,
   AlertCircle,
-  Lock,
   HelpCircle,
+  Eye,
+  Brain,
 } from "lucide-react";
 import { useTBControlStore, type DoseFlowStep } from "@/lib/store";
 import { DRUG_LABELS } from "@/lib/protocols";
 import { RulesMonitor } from "@/components/dose/rules-monitor";
 import { PhaseIndicator } from "@/components/dose/phase-indicator";
+import { DetectionOverlay } from "@/components/dose/detection-overlay";
+import { DetectionLog } from "@/components/dose/detection-log";
+import {
+  generateDetectionFrame,
+  type DetectionFrame,
+} from "@/lib/mock-detections";
 import { cn } from "@/lib/utils";
 import { detectPills, verifyFace, verifyPillCloseup } from "@/lib/inference";
 import { getWebApp } from "@/lib/telegram";
@@ -51,6 +60,7 @@ interface StepUI {
   hintRu: string;
   hintEn: string;
   icon: typeof Pill;
+  modelLabel: string;
 }
 
 const STEP_META: Record<DoseFlowStep, StepUI | null> = {
@@ -65,6 +75,7 @@ const STEP_META: Record<DoseFlowStep, StepUI | null> = {
     hintRu: "Медленно поверните голову влево, затем вправо",
     hintEn: "Slowly turn your head left, then right",
     icon: CameraIcon,
+    modelLabel: "Mediapipe FaceMesh + Embeddings",
   },
   show_box: {
     key: "show_box",
@@ -75,16 +86,18 @@ const STEP_META: Record<DoseFlowStep, StepUI | null> = {
     hintRu: "Этикеткой к камере",
     hintEn: "Hold so the label faces the camera",
     icon: Pill,
+    modelLabel: "YOLO v8 (custom-trained) + OCR",
   },
   open_box: {
     key: "open_box",
     titleUz: "Qutini oching",
     titleRu: "Откройте коробку",
     titleEn: "Open the box",
-    hintUz: "Qopqoqni ko'taring",
-    hintRu: "Поднимите крышку",
-    hintEn: "Lift the lid",
+    hintUz: "Qopqoqni ko'taring, blistir ko'rinsin",
+    hintRu: "Поднимите крышку — должен быть виден блистер",
+    hintEn: "Lift the lid — blister should be visible",
     icon: Pill,
+    modelLabel: "Action detection + Optical flow",
   },
   show_pills: {
     key: "show_pills",
@@ -95,6 +108,7 @@ const STEP_META: Record<DoseFlowStep, StepUI | null> = {
     hintRu: "Все таблетки должны быть видны",
     hintEn: "All pills must be visible",
     icon: Pill,
+    modelLabel: "YOLO + Mediapipe Hands",
   },
   pill_closeup: {
     key: "pill_closeup",
@@ -105,6 +119,7 @@ const STEP_META: Record<DoseFlowStep, StepUI | null> = {
     hintRu: "ИИ проверит тип препарата",
     hintEn: "AI will verify the drug type",
     icon: Sparkles,
+    modelLabel: "Vision LLM (Qwen-VL 7B AWQ)",
   },
   show_glass: {
     key: "show_glass",
@@ -115,26 +130,29 @@ const STEP_META: Record<DoseFlowStep, StepUI | null> = {
     hintRu: "Стакан должен быть прозрачным",
     hintEn: "Glass must be transparent",
     icon: Pill,
+    modelLabel: "YOLO + translucency check",
   },
   swallow: {
     key: "swallow",
     titleUz: "Tabletkani og'izga soling va suv iching",
     titleRu: "Положите таблетку в рот и запейте",
     titleEn: "Place pill in mouth and drink water",
-    hintUz: "Asta-sekin yutib yuboring",
-    hintRu: "Глотайте медленно",
-    hintEn: "Swallow slowly",
+    hintUz: "Yutib, pastdagi tugmani bosib turing",
+    hintRu: "Проглотите и удерживайте кнопку внизу",
+    hintEn: "Swallow and hold the bottom button",
     icon: Pill,
+    modelLabel: "Optical flow + gesture recognition",
   },
   mouth_check: {
     key: "mouth_check",
-    titleUz: "Og'izni keng oching va ko'rsating",
-    titleRu: "Откройте рот и покажите",
-    titleEn: "Open your mouth wide and show",
+    titleUz: "Og'izni keng oching",
+    titleRu: "Откройте рот пошире",
+    titleEn: "Open your mouth wide",
     hintUz: "AI tabletka o'tib ketganini tekshiradi",
     hintRu: "ИИ убедится, что таблетка проглочена",
-    hintEn: "AI will confirm the pill went down",
+    hintEn: "AI will confirm the pill is swallowed",
     icon: Check,
+    modelLabel: "Mouth-cavity scan + Vision LLM",
   },
 };
 
@@ -146,7 +164,6 @@ export function DoseFlow({ locale }: { locale: string }) {
     advanceDoseStep,
     setRuleStatus,
     completeDose,
-    addWarning,
     resetActiveDose,
   } = useTBControlStore();
 
@@ -170,9 +187,15 @@ export function DoseFlow({ locale }: { locale: string }) {
     pillCount: null,
   });
 
+  // Mock detection frame, refreshed at 30 FPS
+  const [stepStartedAt, setStepStartedAt] = useState<number>(() => Date.now());
+  const [detectionFrame, setDetectionFrame] = useState<DetectionFrame | null>(null);
+  const [aggregatedLog, setAggregatedLog] = useState<DetectionFrame["log"]>([]);
+
   const currentStep = activeDose.step;
   const meta = STEP_META[currentStep];
   const expectedDrugs = prescription?.doses[0]?.drugs.map((d) => d.drugCode) ?? [];
+  const expectedPillCount = prescription?.doses[0]?.drugs.reduce((s, d) => s + d.count, 0) ?? 1;
 
   // Bail if no prescription
   useEffect(() => {
@@ -180,23 +203,27 @@ export function DoseFlow({ locale }: { locale: string }) {
     if (currentStep === "rules_agreement") advanceDoseStep("face_id");
   }, [prescription, currentStep, advanceDoseStep, router, locale]);
 
+  // When step changes, reset timer + log
+  useEffect(() => {
+    setStepStartedAt(Date.now());
+    setAggregatedLog([]);
+  }, [currentStep]);
+
   // Camera setup
   useEffect(() => {
     let mounted = true;
     const setup = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: 1280, height: 720 },
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
         if (!mounted) {
-          stream.getTracks().forEach((t) => t.stop());
+          stream.getTracks().forEach((tr) => tr.stop());
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        if (videoRef.current) videoRef.current.srcObject = stream;
       } catch (err) {
         console.error("Camera unavailable:", err);
         setCollectedFlags((f) => [
@@ -212,25 +239,42 @@ export function DoseFlow({ locale }: { locale: string }) {
     setup();
     return () => {
       mounted = false;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((tr) => tr.stop());
     };
   }, []);
 
-  // Mock rule monitor — alternates statuses for demo
+  // Mock detection generator: 30fps update
+  useEffect(() => {
+    if (!meta) return;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - stepStartedAt;
+      const frame = generateDetectionFrame(currentStep, elapsed, expectedPillCount);
+      setDetectionFrame(frame);
+      // Append new log entries
+      if (frame.log.length > 0) {
+        setAggregatedLog((prev) => {
+          const existingTimes = new Set(prev.map((e) => e.time));
+          const newOnes = frame.log.filter((e) => !existingTimes.has(e.time));
+          return [...prev, ...newOnes].slice(-12);
+        });
+      }
+    }, 33);
+    return () => clearInterval(interval);
+  }, [currentStep, stepStartedAt, expectedPillCount, meta]);
+
+  // Mock rule monitor
   useEffect(() => {
     const interval = setInterval(() => {
-      // Random small jitter — most of the time green, occasional warning
       const rules = ["faceInFrame", "lighting", "singlePerson", "cameraStable", "handsVisible"] as const;
       rules.forEach((r) => {
-        const roll = Math.random();
-        const status = roll > 0.92 ? "warning" : "ok";
+        const status = Math.random() > 0.94 ? "warning" : "ok";
         setRuleStatus(r, status);
       });
     }, 2500);
     return () => clearInterval(interval);
   }, [setRuleStatus]);
 
-  // Capture frame as blob
+  // Capture frame as blob (UN-mirrored for AI)
   const captureFrame = useCallback((): Blob | null => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -251,7 +295,6 @@ export function DoseFlow({ locale }: { locale: string }) {
     setStepStatus("checking");
     setRetryHint(null);
 
-    // Simulate frame capture (mock or real)
     const frame =
       typeof document !== "undefined"
         ? captureFrame() ?? new Blob([new Uint8Array(8)], { type: "image/jpeg" })
@@ -260,7 +303,6 @@ export function DoseFlow({ locale }: { locale: string }) {
     try {
       let success = false;
       let confidence: number | null = null;
-      const flagOnFail: { type: string; note: string } | null = null;
 
       if (currentStep === "face_id") {
         const r = await verifyFace(frame, prescription?.patientId ?? "demo");
@@ -299,7 +341,6 @@ export function DoseFlow({ locale }: { locale: string }) {
           ));
         }
       } else {
-        // open_box, show_glass, swallow, mouth_check — mock action detection
         await new Promise((r) => setTimeout(r, 1400 + Math.random() * 800));
         success = Math.random() > 0.15;
         confidence = 0.82 + Math.random() * 0.13;
@@ -315,12 +356,10 @@ export function DoseFlow({ locale }: { locale: string }) {
       if (success) {
         setStepStatus("success");
         getWebApp()?.HapticFeedback.notificationOccurred("success");
-        // Wait briefly for "success" UI, then advance
         setTimeout(() => {
           const idx = STEP_ORDER.indexOf(currentStep);
           const next = STEP_ORDER[idx + 1];
           if (next === "completed") {
-            // Final step done
             finalizeDose();
           } else {
             advanceDoseStep(next);
@@ -332,7 +371,6 @@ export function DoseFlow({ locale }: { locale: string }) {
         setStepStatus("retry");
         getWebApp()?.HapticFeedback.notificationOccurred("warning");
         if (confidence !== null && confidence < 0.5) {
-          // Low-confidence fail = potential red flag
           setCollectedFlags((f) => [
             ...f,
             {
@@ -387,7 +425,7 @@ export function DoseFlow({ locale }: { locale: string }) {
         timestamp: f.timestamp,
       })),
     );
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
     router.push(`/${locale}/dose/complete`);
   };
 
@@ -397,7 +435,7 @@ export function DoseFlow({ locale }: { locale: string }) {
       "Прервать приём? Это оставит красный флажок.",
       "Cancel dose? This leaves a red flag.",
     ))) {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((tr) => tr.stop());
       resetActiveDose();
       router.push(`/${locale}/today`);
     }
@@ -412,108 +450,152 @@ export function DoseFlow({ locale }: { locale: string }) {
   }
 
   const StepIcon = meta.icon;
-  const totalDrugs = prescription.doses[0]?.drugs.reduce((s, d) => s + d.count, 0) ?? 0;
+  const stepIdx = STEP_ORDER.indexOf(currentStep);
+  const totalSteps = STEP_ORDER.length - 1;
 
   return (
-    <main className="bg-aurora min-h-screen relative flex flex-col">
-      {/* Top bar */}
-      <header className="relative z-20 px-4 pt-4 pb-2 flex items-center justify-between bg-white/85 backdrop-blur shadow-sm">
+    <main className="min-h-screen flex flex-col bg-slate-950 text-white relative">
+      {/* TOP BAR */}
+      <header className="z-30 px-4 pt-3 pb-2 flex items-center justify-between bg-slate-900/95 backdrop-blur border-b border-slate-800 shrink-0">
         <button
           onClick={cancelDose}
-          className="w-9 h-9 rounded-full bg-[var(--color-mist)] flex items-center justify-center text-[var(--color-slate-600)]"
+          className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center"
           aria-label="cancel"
         >
-          <X size={18} />
+          <X size={16} />
         </button>
         <div className="text-center">
-          <p className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-slate-400)]">
-            {t("Dorini qabul qilish", "Приём дозы", "Dose intake")}
+          <p className="text-[9px] uppercase tracking-wider font-bold text-slate-400 font-mono">
+            {t("AI VERIFIED INTAKE", "ПРИЁМ ПОД AI", "AI VERIFIED INTAKE")}
           </p>
-          <p className="text-xs font-semibold tabular flex items-center gap-1.5 justify-center">
-            <Lock size={11} className="text-[var(--color-brand)]" />
-            {totalDrugs} {t("dori", "табл.", "pills")}
+          <p className="text-xs font-bold tabular font-mono">
+            STEP {stepIdx + 1}/{totalSteps}
           </p>
         </div>
         <button
           onClick={() => alert(t("Yordam tez orada", "Помощь скоро", "Help coming soon"))}
-          className="w-9 h-9 rounded-full bg-[var(--color-mist)] flex items-center justify-center text-[var(--color-slate-600)]"
+          className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center"
           aria-label="help"
         >
-          <HelpCircle size={18} />
+          <HelpCircle size={16} />
         </button>
       </header>
 
-      {/* Camera viewport (top half) */}
-      <section className="relative flex-1 mx-3 mt-3 mb-2 rounded-3xl overflow-hidden shadow-xl bg-slate-900 min-h-[260px]">
+      {/* INSTRUCTION CARD — always visible */}
+      <section className="z-20 px-3 pt-3 pb-2 shrink-0">
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg"
+        >
+          <div className="w-10 h-10 rounded-xl bg-[var(--color-brand)]/20 text-[var(--color-brand)] flex items-center justify-center shrink-0">
+            <StepIcon size={20} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-heading font-bold text-sm leading-tight">
+              {meta[`title${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "titleUz" | "titleRu" | "titleEn"]}
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5 truncate">
+              {retryHint ?? meta[`hint${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "hintUz" | "hintRu" | "hintEn"]}
+            </p>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* CAMERA VIEWPORT — fixed height */}
+      <section className="relative mx-3 rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 shrink-0" style={{ height: "44vh", minHeight: 240, maxHeight: 420 }}>
+        {/* Mirrored video for selfie UX (AI receives un-mirrored frame via canvas) */}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
           className="w-full h-full object-cover"
+          style={{ transform: "scaleX(-1)" }}
         />
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Camera overlay: status pill */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-          <div className="px-3 py-1.5 rounded-full bg-black/40 backdrop-blur text-white text-xs font-semibold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        {/* Detection overlay */}
+        {detectionFrame && (
+          <DetectionOverlay
+            bboxes={detectionFrame.bboxes}
+            faceLandmarks={detectionFrame.faceLandmarks}
+            scanProgress={detectionFrame.scanProgress}
+            isScanning={detectionFrame.phase === "scanning" || stepStatus === "checking"}
+            mirrored
+          />
+        )}
+
+        {/* Top-left REC + step badge */}
+        <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+          <div className="px-2.5 py-1 rounded-full bg-black/65 backdrop-blur text-white text-[10px] font-bold font-mono flex items-center gap-1.5">
+            <span className="relative flex w-1.5 h-1.5">
+              <span className="absolute inset-0 rounded-full bg-red-500 animate-ping" />
+              <span className="relative rounded-full bg-red-500 w-1.5 h-1.5" />
+            </span>
             REC
           </div>
           {stepStatus === "checking" && (
-            <div className="px-3 py-1.5 rounded-full bg-[var(--color-brand)] text-white text-xs font-semibold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              AI {t("tekshirmoqda", "проверяет", "checking")}…
+            <div className="px-2.5 py-1 rounded-full bg-cyan-500 text-white text-[10px] font-bold font-mono flex items-center gap-1.5">
+              <Brain size={11} className="animate-pulse" />
+              ANALYZING
             </div>
           )}
           {stepStatus === "success" && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="px-3 py-1.5 rounded-full bg-[var(--color-success)] text-white text-xs font-bold flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold font-mono flex items-center gap-1.5"
             >
-              <Check size={14} strokeWidth={3} />
-              {t("Tasdiqlandi", "Подтверждено", "Confirmed")}
+              <Check size={11} strokeWidth={3} />
+              VERIFIED
             </motion.div>
+          )}
+          {stepStatus === "retry" && (
+            <div className="px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold font-mono flex items-center gap-1.5">
+              <AlertCircle size={11} />
+              RETRY
+            </div>
           )}
         </div>
 
-        {/* Center step instruction overlay */}
-        <div className="absolute inset-x-3 bottom-3">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white/92 backdrop-blur rounded-2xl px-4 py-3 shadow-md flex items-center gap-3"
-          >
-            <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand)] flex items-center justify-center shrink-0">
-              <StepIcon size={20} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-heading font-bold text-sm leading-tight">
-                {meta[`title${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "titleUz" | "titleRu" | "titleEn"]}
-              </p>
-              <p className="text-xs text-[var(--color-slate-500)] mt-0.5 truncate">
-                {retryHint ?? meta[`hint${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "hintUz" | "hintRu" | "hintEn"]}
-              </p>
-            </div>
-          </motion.div>
+        {/* Bottom-right "looking at" hint per step */}
+        <div className="absolute bottom-2 right-2 pointer-events-none">
+          <div className="px-2 py-1 rounded-md bg-black/55 backdrop-blur text-white text-[9px] font-mono flex items-center gap-1">
+            <Eye size={10} />
+            {meta.modelLabel}
+          </div>
         </div>
       </section>
 
-      {/* Action area (bottom) */}
-      <section className="relative z-10 mx-3 mb-2">
-        {/* Show pills hint with drug chips */}
+      {/* DETECTION LOG */}
+      <section className="px-3 pt-2 shrink-0">
+        <DetectionLog
+          entries={aggregatedLog}
+          confidence={detectionFrame?.liveConfidence ?? 0}
+          modelName={meta.modelLabel}
+        />
+      </section>
+
+      {/* PHASE INDICATOR */}
+      <section className="px-3 pt-2 shrink-0">
+        <PhaseIndicator currentStep={currentStep} locale={locale} />
+      </section>
+
+      {/* ACTION BUTTON */}
+      <section className="px-3 pt-2 shrink-0">
+        {/* Show drugs hint */}
         {(currentStep === "show_pills" || currentStep === "show_box") && (
-          <div className="bg-white rounded-2xl p-3 mb-2 shadow-sm">
-            <p className="text-[10px] uppercase font-bold text-[var(--color-slate-500)] mb-1.5">
-              {t("Bugungi dorilar", "Сегодняшние дозы", "Today's drugs")}
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-2 mb-2">
+            <p className="text-[9px] uppercase font-bold text-slate-400 mb-1.5 font-mono">
+              {t("Bugungi dozalar", "Сегодняшние дозы", "Today's doses")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {prescription.doses[0].drugs.map((drug, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold text-white shadow-sm"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-white shadow-sm"
                   style={{ backgroundColor: DRUG_LABELS[drug.drugCode].color }}
                 >
                   <Pill size={10} />
@@ -524,7 +606,6 @@ export function DoseFlow({ locale }: { locale: string }) {
           </div>
         )}
 
-        {/* Action button */}
         {currentStep === "swallow" ? (
           <LongPressButton
             label={t("Yutdim — bosib turing", "Я проглотил — удерживайте", "I've swallowed — hold")}
@@ -537,9 +618,9 @@ export function DoseFlow({ locale }: { locale: string }) {
           <button
             onClick={runStepCheck}
             disabled={stepStatus === "checking"}
-            className="w-full h-14 rounded-2xl bg-[var(--color-brand)] text-white font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-50"
+            className="w-full h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-heading font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-50"
           >
-            <Check size={20} strokeWidth={2.5} />
+            <Check size={18} strokeWidth={2.5} />
             {stepStatus === "checking"
               ? t("Tekshirilmoqda…", "Проверяю…", "Checking…")
               : t("Og'iz bo'sh — yakunlash", "Рот пуст — завершить", "Mouth empty — finish")}
@@ -549,39 +630,34 @@ export function DoseFlow({ locale }: { locale: string }) {
             onClick={runStepCheck}
             disabled={stepStatus === "checking"}
             className={cn(
-              "w-full h-14 rounded-2xl font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-60",
+              "w-full h-12 rounded-2xl font-heading font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-60",
               stepStatus === "retry"
-                ? "bg-amber-500 text-white"
-                : "bg-[var(--color-brand)] text-white",
+                ? "bg-amber-500 hover:bg-amber-400 text-white"
+                : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-dark)] text-white",
             )}
           >
             {stepStatus === "checking" ? (
               <>
-                <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                 {t("AI tekshirmoqda…", "ИИ проверяет…", "AI checking…")}
               </>
             ) : stepStatus === "retry" ? (
               <>
-                <AlertCircle size={20} />
+                <AlertCircle size={18} />
                 {t("Qayta urining", "Попробовать снова", "Try again")}
               </>
             ) : (
               <>
-                <Sparkles size={20} />
-                {t("Tayyor", "Готово", "Ready")}
+                <Sparkles size={18} />
+                {t("Tayyor — tekshiruv", "Готово — проверить", "Ready — verify")}
               </>
             )}
           </button>
         )}
       </section>
 
-      {/* Phase indicator */}
-      <section className="px-3 pb-2">
-        <PhaseIndicator currentStep={currentStep} locale={locale} />
-      </section>
-
-      {/* Rules monitor (bottom strip on mobile) */}
-      <section className="px-3 pb-3">
+      {/* RULES MONITOR (compact) */}
+      <section className="px-3 py-2 mt-auto shrink-0">
         <RulesMonitor locale={locale} layout="bottom" />
       </section>
     </main>
@@ -605,7 +681,7 @@ function LongPressButton({
   setProgress: (n: number) => void;
   disabled?: boolean;
 }) {
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const start = () => {
     if (disabled) return;
@@ -631,14 +707,14 @@ function LongPressButton({
       onPointerUp={stop}
       onPointerLeave={stop}
       disabled={disabled}
-      className="relative w-full h-14 rounded-2xl bg-[var(--color-accent)] text-white font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg overflow-hidden disabled:opacity-50"
+      className="relative w-full h-12 rounded-2xl bg-amber-500 text-white font-heading font-bold text-sm flex items-center justify-center gap-2 shadow-lg overflow-hidden disabled:opacity-50 select-none"
     >
       <div
         className="absolute inset-0 bg-white/20 transition-all"
         style={{ width: `${progress}%` }}
       />
       <span className="relative z-10 flex items-center gap-2">
-        <Pill size={20} />
+        <Pill size={18} />
         {label}
       </span>
     </button>

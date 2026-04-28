@@ -26,7 +26,8 @@ export type DrugCode =
   | "clofazimine"
   | "delamanid"
   | "pretomanid"
-  | "cycloserine";
+  | "cycloserine"
+  | "ascorutin_demo";   // safe-to-swallow demo placeholder for hackathon presentation
 
 export interface PrescribedDrug {
   drugCode: DrugCode;

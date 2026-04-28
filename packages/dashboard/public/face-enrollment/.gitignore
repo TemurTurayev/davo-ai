@@ -1,0 +1,11 @@
+# Real face photos are sensitive — don't commit
+*.jpg
+*.jpeg
+*.png
+*.webp
+embeddings.json
+
+# But do commit the README and folder structure
+!README.md
+!.gitignore
+!.gitkeep
