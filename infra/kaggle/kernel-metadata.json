@@ -1,6 +1,6 @@
 {
-  "id": "temur1210/davoai-inference",
-  "title": "Davo-AI · Inference Server",
+  "id": "temur1210/davo-ai-inference-server",
+  "title": "Davo-AI Inference Server",
   "code_file": "davoai-inference.ipynb",
   "language": "python",
   "kernel_type": "notebook",
