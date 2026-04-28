@@ -41,9 +41,12 @@ export function useFaceTracker(
       const { initFaceApi } = await import("@/lib/face-api-loader");
       const faceapi = await import("@vladmandic/face-api");
       await initFaceApi();
+      // 416 inputSize ≈ 30% more CPU but tighter landmark localization
+      // (the 320 setting drifted during head turns). M-class hardware handles
+      // this comfortably; for low-end devices we'd revert to 320.
       const detectorOpts = new faceapi.TinyFaceDetectorOptions({
-        inputSize: 320,
-        scoreThreshold: 0.45,
+        inputSize: 416,
+        scoreThreshold: 0.5,
       });
 
       while (!cancelled) {

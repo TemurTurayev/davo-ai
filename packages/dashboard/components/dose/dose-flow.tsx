@@ -37,6 +37,9 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/use-t";
 import { useCamera } from "@/lib/use-camera";
 import { useFaceTracker } from "@/lib/use-face-tracker";
+import { useHandTracker } from "@/lib/use-hand-tracker";
+import { useFrameAnalysis } from "@/lib/use-frame-analysis";
+import { useRealRulesMonitor } from "@/lib/use-real-rules-monitor";
 import { useMockDetections } from "@/lib/use-mock-detections";
 import { useDoseStepRunner } from "@/lib/use-dose-step-runner";
 import { STEP_META, DOSE_STEP_ORDER } from "@/lib/dose-step-meta";
@@ -44,7 +47,7 @@ import { STEP_META, DOSE_STEP_ORDER } from "@/lib/dose-step-meta";
 export function DoseFlow({ locale }: { locale: string }) {
   const router = useRouter();
   const { t, lang } = useT();
-  const { prescription, activeDose, advanceDoseStep, setRuleStatus } = useTBControlStore();
+  const { prescription, activeDose, advanceDoseStep } = useTBControlStore();
 
   const currentStep = activeDose.step;
   const meta = STEP_META[currentStep];
@@ -53,7 +56,28 @@ export function DoseFlow({ locale }: { locale: string }) {
 
   // Hooks — order matters, must be called unconditionally before early returns
   const camera = useCamera(true);
-  const realFaceTracking = useFaceTracker(camera.videoRef, currentStep === "face_id");
+  // face-api runs whenever camera is up so the rules monitor has a real signal
+  // (not just on face_id step). Only the OVERLAY uses it on face_id specifically.
+  const realFaceTracking = useFaceTracker(camera.videoRef, true);
+  // Mediapipe Hands runs from show_pills step onward (when patient should be holding pills).
+  const handsRelevant =
+    currentStep === "show_pills" ||
+    currentStep === "pill_closeup" ||
+    currentStep === "show_glass" ||
+    currentStep === "swallow";
+  const realHandTracking = useHandTracker(camera.videoRef, handsRelevant);
+  // Frame analysis (brightness + motion) always running for rules
+  const frameAnalysis = useFrameAnalysis(camera.videoRef, true);
+
+  // Real rules monitor — replaces the random mock that lit everything green
+  useRealRulesMonitor({
+    videoRef: camera.videoRef,
+    face: realFaceTracking,
+    hands: realHandTracking,
+    frame: frameAnalysis,
+    handsRequired: handsRelevant,
+  });
+
   const stopCamera = () => camera.videoRef.current?.srcObject &&
     (camera.videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
 
@@ -74,17 +98,7 @@ export function DoseFlow({ locale }: { locale: string }) {
     runner.stepStatus === "checking" || runner.stepStatus === "success",
   );
 
-  // Mock rule monitor — gentle 2.5s jitter
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const rules = ["faceInFrame", "lighting", "singlePerson", "cameraStable", "handsVisible"] as const;
-      rules.forEach((r) => {
-        const status = Math.random() > 0.94 ? "warning" : "ok";
-        setRuleStatus(r, status);
-      });
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [setRuleStatus]);
+  // (Real rules monitor handled by useRealRulesMonitor above — no random jitter)
 
   // Bail to awaiting-prescription if we landed here without a prescription;
   // skip the rules_agreement step (legacy from when it was inline)
@@ -174,17 +188,14 @@ export function DoseFlow({ locale }: { locale: string }) {
               />
               <canvas ref={camera.canvasRef} className="hidden" />
 
-              {detectionFrame && (
-                <DetectionOverlay
-                  bboxes={detectionFrame.bboxes}
-                  faceLandmarks={detectionFrame.faceLandmarks}
-                  scanProgress={detectionFrame.scanProgress}
-                  isScanning={detectionFrame.phase === "scanning" || runner.stepStatus === "checking"}
-                  mirrored
-                  realTracking={realFaceTracking}
-                  step={currentStep}
-                />
-              )}
+              <DetectionOverlay
+                scanProgress={detectionFrame?.scanProgress ?? 0}
+                isScanning={detectionFrame?.phase === "scanning" || runner.stepStatus === "checking"}
+                mirrored
+                realTracking={realFaceTracking}
+                handTracking={realHandTracking}
+                step={currentStep}
+              />
 
               {/* Status badges */}
               <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">

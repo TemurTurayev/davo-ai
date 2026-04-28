@@ -5,50 +5,62 @@ import { memo } from "react";
 /**
  * Detection Overlay — SVG drawn on top of the live video.
  *
- * Two render modes:
- *  - Mock mode (default): static face mesh dots + jittered bboxes from
- *    `lib/mock-detections.ts`. Used for non-face_id steps and when face-api
- *    hasn't initialized yet.
- *  - Real mode: when `realTracking.detected` is true, replaces the mock
- *    face mesh with actual 68-point landmarks from face-api.js, and the
- *    bbox follows the real face.
+ * Render priority (per-step):
+ *   1. face_id   → REAL face-api bbox + 68 landmarks. NO mock anything.
+ *   2. show_pills, pill_closeup, swallow, mouth_check → REAL Mediapipe Hands
+ *      bbox + 21 landmarks per hand. NO mock pills.
+ *   3. show_box, open_box, show_glass → NO bbox (no real client-side detector
+ *      available; would need server YOLO). Just scan-line + corner brackets so
+ *      jury sees "AI is watching" without lying about objects we haven't seen.
  *
- * Always-on: animated scan line, corner viewfinder brackets, grid texture.
+ * Always-on: animated scan line (when isScanning), corner viewfinder brackets,
+ * subtle grid texture.
  */
 
 import { motion, AnimatePresence } from "framer-motion";
-import type { BBox, FaceLandmark } from "@/lib/mock-detections";
 import type { FaceTracking } from "@/lib/use-face-tracker";
+import type { HandTracking } from "@/lib/use-hand-tracker";
+import type { DoseFlowStep } from "@/lib/store";
 
 interface DetectionOverlayProps {
-  bboxes: BBox[];
-  faceLandmarks: FaceLandmark[];
   scanProgress: number;
   isScanning: boolean;
-  /** Mirror the overlay horizontally to match the mirrored selfie video */
+  /** Mirror to match the mirrored selfie video */
   mirrored?: boolean;
-  /** When provided + detected, takes precedence over mock face mesh on face_id step */
+  /** Real face-api detection (used on face_id step) */
   realTracking?: FaceTracking;
-  /** Step we're on — used to decide whether real tracker should override mock */
-  step?: string;
+  /** Real Mediapipe Hands detection (used on hand-related steps) */
+  handTracking?: HandTracking;
+  /** Current step — drives which detection layer to render */
+  step?: DoseFlowStep;
 }
 
 const W = 1000;
 const H = 1000;
 
+const HAND_RELATED_STEPS = new Set<DoseFlowStep>([
+  "show_pills",
+  "pill_closeup",
+  "swallow",
+  "mouth_check",
+]);
+
 export const DetectionOverlay = memo(DetectionOverlayInner);
 
 function DetectionOverlayInner({
-  bboxes,
-  faceLandmarks,
   scanProgress,
   isScanning,
   mirrored = true,
   realTracking,
+  handTracking,
   step,
 }: DetectionOverlayProps) {
-  // On face_id step, prefer real face-api tracking when face is detected
-  const useRealFace = step === "face_id" && realTracking?.detected && realTracking.box;
+  const showFace = step === "face_id" && realTracking?.detected;
+  const showHands =
+    step !== undefined &&
+    HAND_RELATED_STEPS.has(step) &&
+    handTracking?.detected &&
+    handTracking.hands.length > 0;
 
   return (
     <svg
@@ -92,38 +104,12 @@ function DetectionOverlayInner({
         />
       )}
 
-      {/* REAL face mesh — takes precedence on face_id step */}
-      {useRealFace && (
-        <RealFaceMesh tracking={realTracking!} />
-      )}
-
-      {/* MOCK face mesh — fallback or non-face steps */}
-      {!useRealFace && faceLandmarks.length > 0 && (
-        <g>
-          {faceLandmarks.map((p) => (
-            <motion.circle
-              key={p.idx}
-              initial={{ opacity: 0, r: 0 }}
-              animate={{ opacity: 0.85, r: 2.5 }}
-              transition={{ duration: 0.2, delay: p.idx * 0.003 }}
-              cx={p.x * W}
-              cy={p.y * H}
-              fill="#5EEAD4"
-            />
-          ))}
-        </g>
-      )}
-
-      {/* BBoxes — replace face bbox with real one when tracking */}
       <AnimatePresence>
-        {bboxes
-          .filter((b) => !(useRealFace && b.id === "face"))
-          .map((b) => (
-            <BBoxRect key={b.id} bbox={b} mirrored={mirrored} />
-          ))}
-        {useRealFace && (
-          <RealFaceBBox key="real-face" tracking={realTracking!} mirrored={mirrored} />
-        )}
+        {showFace && <RealFaceMesh key="face-mesh" tracking={realTracking!} />}
+        {showFace && <RealFaceBBox key="face-bbox" tracking={realTracking!} mirrored={mirrored} />}
+        {showHands && handTracking!.hands.map((h, i) => (
+          <RealHandLayer key={`hand-${i}`} hand={h} mirrored={mirrored} index={i} />
+        ))}
       </AnimatePresence>
     </svg>
   );
@@ -151,25 +137,16 @@ function CornerBrackets({ active }: { active: boolean }) {
   );
 }
 
-/** Renders the 68-point face mesh from face-api.js, following the real face */
 function RealFaceMesh({ tracking }: { tracking: FaceTracking }) {
   return (
     <g>
       {tracking.landmarks.map((p, i) => (
-        <circle
-          key={i}
-          cx={p.x * W}
-          cy={p.y * H}
-          r={2.2}
-          fill="#5EEAD4"
-          opacity={0.9}
-        />
+        <circle key={i} cx={p.x * W} cy={p.y * H} r={2.5} fill="#5EEAD4" opacity={0.85} />
       ))}
     </g>
   );
 }
 
-/** Renders bbox that follows the real face position */
 function RealFaceBBox({ tracking, mirrored }: { tracking: FaceTracking; mirrored: boolean }) {
   if (!tracking.box) return null;
   const { x, y, width, height } = tracking.box;
@@ -182,14 +159,10 @@ function RealFaceBBox({ tracking, mirrored }: { tracking: FaceTracking; mirrored
   const stroke = verified ? "#10B981" : "#0EA5A4";
   const label = verified ? "Patient · verified" : "Tracking face…";
   const conf = Math.round(tracking.score * 100);
+  const labelW = Math.max(180, label.length * 9 + 60);
 
   return (
-    <motion.g
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 0.95 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-    >
+    <motion.g initial={{ opacity: 0 }} animate={{ opacity: 0.95 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
       <rect
         x={px}
         y={py}
@@ -201,19 +174,18 @@ function RealFaceBBox({ tracking, mirrored }: { tracking: FaceTracking; mirrored
         rx={12}
         filter={verified ? "url(#verify-glow)" : undefined}
       />
-      {/* Label — counter-mirrored so text reads correctly even when overlay is mirrored */}
       <g transform={mirrored ? `translate(${W}, 0) scale(-1, 1)` : ""}>
         <rect
-          x={mirrored ? W - px - Math.max(180, label.length * 9 + 60) : px}
+          x={mirrored ? W - px - labelW : px}
           y={Math.max(0, py - 36)}
-          width={Math.max(180, label.length * 9 + 60)}
+          width={labelW}
           height={32}
           rx={8}
           fill={stroke}
           opacity={0.95}
         />
         <text
-          x={(mirrored ? W - px - Math.max(180, label.length * 9 + 60) : px) + 12}
+          x={(mirrored ? W - px - labelW : px) + 12}
           y={py - 14}
           fontSize={16}
           fontFamily="JetBrains Mono, monospace"
@@ -223,7 +195,7 @@ function RealFaceBBox({ tracking, mirrored }: { tracking: FaceTracking; mirrored
           {label}
         </text>
         <text
-          x={(mirrored ? W - px - 12 : px + Math.max(180, label.length * 9 + 60) - 12)}
+          x={(mirrored ? W - px - 12 : px + labelW - 12)}
           y={py - 14}
           fontSize={14}
           fontFamily="JetBrains Mono, monospace"
@@ -238,68 +210,98 @@ function RealFaceBBox({ tracking, mirrored }: { tracking: FaceTracking; mirrored
   );
 }
 
-function BBoxRect({ bbox, mirrored }: { bbox: BBox; mirrored: boolean }) {
-  const [x1, y1, x2, y2] = bbox.bbox;
-  const x = x1 * W;
-  const y = y1 * H;
-  const w = (x2 - x1) * W;
-  const h = (y2 - y1) * H;
-  const strokeColor = bbox.state === "verified" ? "#10B981" : bbox.color;
-  const strokeWidth = bbox.state === "verified" ? 5 : 4;
-  const dash = bbox.state === "detecting" ? "16 10" : "0";
-  const opacity = bbox.state === "detecting" ? 0.7 : 0.95;
-  const labelY = y - 14;
-  const labelW = Math.min(220, Math.max(140, bbox.label.length * 9 + 60));
+/** Mediapipe Hands detection — bbox + 21 landmarks per hand */
+function RealHandLayer({
+  hand,
+  mirrored,
+  index,
+}: {
+  hand: HandTracking["hands"][number];
+  mirrored: boolean;
+  index: number;
+}) {
+  const { box, landmarks, handedness, confidence } = hand;
+  const px = box.x * W;
+  const py = box.y * H;
+  const pw = box.width * W;
+  const ph = box.height * H;
+
+  const stroke = index === 0 ? "#A78BFA" : "#F472B6";
+  const label = `${handedness} hand`;
+  const conf = Math.round(confidence * 100);
+  const labelW = Math.max(140, label.length * 9 + 50);
+
+  // 21-point hand landmark connections (Mediapipe ordering)
+  const CONNECTIONS: [number, number][] = [
+    [0, 1], [1, 2], [2, 3], [3, 4],         // thumb
+    [0, 5], [5, 6], [6, 7], [7, 8],          // index
+    [0, 9], [9, 10], [10, 11], [11, 12],     // middle
+    [0, 13], [13, 14], [14, 15], [15, 16],   // ring
+    [0, 17], [17, 18], [18, 19], [19, 20],   // pinky
+    [5, 9], [9, 13], [13, 17],               // palm
+  ];
 
   return (
-    <motion.g
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity, scale: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-    >
+    <motion.g initial={{ opacity: 0 }} animate={{ opacity: 0.9 }} exit={{ opacity: 0 }}>
+      {/* Bounding box */}
       <rect
-        x={x}
-        y={y}
-        width={w}
-        height={h}
+        x={px}
+        y={py}
+        width={pw}
+        height={ph}
         fill="none"
-        stroke={strokeColor}
-        strokeWidth={strokeWidth}
-        strokeDasharray={dash}
+        stroke={stroke}
+        strokeWidth={4}
         rx={12}
-        filter={bbox.state === "verified" ? "url(#verify-glow)" : undefined}
       />
+      {/* Skeleton lines */}
+      {CONNECTIONS.map(([a, b], i) => (
+        <line
+          key={i}
+          x1={landmarks[a].x * W}
+          y1={landmarks[a].y * H}
+          x2={landmarks[b].x * W}
+          y2={landmarks[b].y * H}
+          stroke={stroke}
+          strokeWidth={2}
+          strokeOpacity={0.7}
+        />
+      ))}
+      {/* Joints */}
+      {landmarks.map((p, i) => (
+        <circle key={i} cx={p.x * W} cy={p.y * H} r={i === 0 ? 5 : 3} fill={stroke} opacity={0.95} />
+      ))}
+      {/* Label */}
       <g transform={mirrored ? `translate(${W}, 0) scale(-1, 1)` : ""}>
         <rect
-          x={mirrored ? W - x - labelW : x}
-          y={Math.max(0, labelY - 28)}
+          x={mirrored ? W - px - labelW : px}
+          y={Math.max(0, py - 36)}
           width={labelW}
           height={32}
           rx={8}
-          fill={bbox.state === "verified" ? "#10B981" : strokeColor}
+          fill={stroke}
           opacity={0.95}
         />
         <text
-          x={(mirrored ? W - x - labelW : x) + 12}
-          y={labelY - 8}
-          fontSize={16}
+          x={(mirrored ? W - px - labelW : px) + 12}
+          y={py - 14}
+          fontSize={14}
           fontFamily="JetBrains Mono, monospace"
           fontWeight={700}
           fill="white"
         >
-          {bbox.label}
+          {label}
         </text>
         <text
-          x={(mirrored ? W - x - 12 : x + labelW - 12)}
-          y={labelY - 8}
-          fontSize={14}
+          x={(mirrored ? W - px - 12 : px + labelW - 12)}
+          y={py - 14}
+          fontSize={13}
           fontFamily="JetBrains Mono, monospace"
           fontWeight={700}
           fill="white"
           textAnchor="end"
         >
-          {Math.round(bbox.confidence * 100)}%
+          {conf}%
         </text>
       </g>
     </motion.g>
