@@ -4,9 +4,8 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const config: NextConfig = {
-  experimental: {
-    typedRoutes: true,
-  },
+  // typedRoutes disabled — strict mode breaks dynamic href={string} usage in LinkRow.
+  // Re-enable post-MVP after refactoring all Link components to use Route type.
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "spark-5.idrock.uz" },
