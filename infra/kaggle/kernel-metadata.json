@@ -1,0 +1,13 @@
+{
+  "id": "temur1210/davoai-inference",
+  "title": "Davo-AI · Inference Server",
+  "code_file": "davoai-inference.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}
