@@ -157,50 +157,57 @@ hf_login() {
 
 # ─── Download models ────────────────────────────────────────────────────────
 download_models() {
-    section "Download models (~25 GB total)"
+    section "Download models (~25 GB total) — using HF Python API"
     # shellcheck disable=SC1091
     source /workspace/venv/bin/activate
 
-    cd "$DAVOAI_HOME/models"
+    # Используем Python API напрямую — `huggingface-cli` deprecated в HF Hub 1.x
+    python <<'PYEOF'
+from pathlib import Path
+from huggingface_hub import snapshot_download
 
-    # LLM: try primary → fallback → safe
-    if [[ ! -d "llm" ]]; then
-        log "→ Downloading LLM (~17 GB)"
-        if huggingface-cli download "$LLM_MODEL_PRIMARY" --local-dir llm 2>&1 | tail -5; then
-            log "✓ Aya Expanse 32B AWQ downloaded"
-            echo "$LLM_MODEL_PRIMARY" > llm/.model_name
-        elif huggingface-cli download "$LLM_MODEL_FALLBACK" --local-dir llm 2>&1 | tail -5; then
-            log "✓ Qwen2.5-32B AWQ downloaded (fallback)"
-            echo "$LLM_MODEL_FALLBACK" > llm/.model_name
-        else
-            warn "32B AWQ not available. Falling back to 14B (smaller, less Uzbek-tuned)"
-            huggingface-cli download "$LLM_MODEL_SAFE" --local-dir llm
-            echo "$LLM_MODEL_SAFE" > llm/.model_name
-        fi
-    else
-        log "LLM already downloaded: $(cat llm/.model_name 2>/dev/null || echo unknown)"
-    fi
+MODELS = Path("/workspace/davoai/models")
 
-    # Vision
-    if [[ ! -d "vision" ]]; then
-        log "→ Downloading Vision (~7 GB)"
-        huggingface-cli download "$VISION_MODEL" --local-dir vision || \
-            huggingface-cli download "Qwen/Qwen2.5-VL-7B-Instruct" --local-dir vision
-    else
-        log "Vision already downloaded"
-    fi
+def try_download(candidates, local_dir, label):
+    for repo in candidates:
+        try:
+            print(f"  → {label}: trying {repo}")
+            snapshot_download(repo_id=repo, local_dir=str(MODELS / local_dir), max_workers=8)
+            (MODELS / local_dir / ".model_name").write_text(repo)
+            print(f"    ✓ {repo}")
+            return
+        except Exception as e:
+            print(f"    ✗ {repo}: {type(e).__name__}: {str(e)[:120]}")
+    raise RuntimeError(f"All {label} candidates failed")
 
-    # Embeddings
-    if [[ ! -d "bge-m3" ]]; then
-        log "→ Downloading BGE-M3 embeddings (~2 GB)"
-        huggingface-cli download "$EMBEDDING_MODEL" --local-dir bge-m3
-    else
-        log "BGE-M3 already downloaded"
-    fi
+# LLM
+if not (MODELS / "llm").exists():
+    try_download([
+        "Qwen/Qwen2.5-32B-Instruct-AWQ",   # ~17 GB, top quality
+        "Qwen/Qwen2.5-14B-Instruct-AWQ",   # ~9 GB safe fallback
+        "Qwen/Qwen2.5-7B-Instruct-AWQ",    # ~5 GB ultra-safe
+    ], "llm", "LLM")
+else:
+    print(f"  LLM exists: {(MODELS / 'llm' / '.model_name').read_text(errors='ignore') if (MODELS / 'llm' / '.model_name').exists() else 'unknown'}")
 
-    # Whisper качается при первом запуске faster-whisper
-    log "Whisper Large-v3-Turbo will be downloaded on first use (~600 MB)"
+# Vision
+if not (MODELS / "vision").exists():
+    try_download([
+        "Qwen/Qwen2.5-VL-7B-Instruct-AWQ",
+        "Qwen/Qwen2.5-VL-7B-Instruct",     # FP16 fallback ~14 GB
+        "Qwen/Qwen2.5-VL-3B-Instruct",     # smallest fallback ~6 GB
+    ], "vision", "Vision")
+else:
+    print(f"  Vision exists")
 
+# Embeddings
+if not (MODELS / "bge-m3").exists():
+    try_download(["BAAI/bge-m3"], "bge-m3", "BGE-M3")
+else:
+    print(f"  BGE-M3 exists")
+PYEOF
+
+    log "Whisper Large-v3-Turbo will be auto-downloaded by faster-whisper on first use (~600 MB)"
     log "Disk usage: $(du -sh "$DAVOAI_HOME/models" | cut -f1)"
 }
 
