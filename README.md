@@ -13,7 +13,7 @@
 **Davo-AI** заменяет DOT на VOT (Video Observed Therapy) с AI-верификацией:
 1. Пациент принимает таблетку перед камерой телефона
 2. Telegram-бот отправляет 15-секундное видео в наш AI-стек
-3. **Локальная AI** (NVIDIA DGX Spark) проверяет: лицо, таблетка, глотание
+3. **Локальная AI** (RTX 5090 GPU server в EU) проверяет: лицо, таблетка, глотание
 4. Врач видит только flagged-кейсы — экономия времени медперсонала
 
 Мета-анализ Cureus 2024: **VOT в 2.79× эффективнее DOT** (RR=2.79, 95% CI 2.26–3.45).
@@ -31,7 +31,7 @@
 | Public health TB | ✅ | ✅ | ❌ (pharma trials) | ✅ | **✅** |
 | **Локальная AI / data sovereignty** | ❌ | ❌ | ❌ | ❌ | **✅** |
 
-**Killer differentiator**: единственное решение, которое сочетает (a) AI-верификацию + (b) Telegram + (c) узбекский + (d) полностью локальную инфраструктуру (NVIDIA DGX Spark) → автоматическое соответствие закону **ZRU-547** Узбекистана.
+**Killer differentiator**: единственное решение, которое сочетает (a) AI-верификацию + (b) Telegram + (c) узбекский + (d) GPU-инфраструктуру в EU (Slovenia datacenter, GDPR-compliant) → готовность к деплою в локальный датацентр Узбекистана для соответствия закону **ZRU-547**.
 
 ---
 
@@ -53,11 +53,12 @@
                          │ Internal API
                          ▼
 ┌───────────────────────────────────────────────────────────┐
-│                  NVIDIA DGX SPARK (локально)               │
+│         RTX 5090 GPU Server (Slovenia DC, EU)              │
+│         32 GB VRAM · vast.ai · ZRU-547-ready                │
 │                                                            │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
 │  │  YOLOv8m     │  │ Qwen2.5-VL   │  │  Aya 32B     │    │
-│  │  TB pills    │  │   7B         │  │  (UZ + RU)   │    │
+│  │  TB pills    │  │  7B AWQ      │  │  AWQ 4-bit   │    │
 │  │  fine-tuned  │  │ face/swallow │  │  чат о SE    │    │
 │  └──────────────┘  └──────────────┘  └──────────────┘    │
 │  ┌──────────────┐  ┌──────────────┐                      │
@@ -82,17 +83,17 @@
 |------|-----------|------|
 | Patient interface | Telegram (aiogram 3.x) | Docker container |
 | Local Bot API | telegram-bot-api в Docker | Docker container |
-| Vision (pill+swallow) | Qwen2.5-VL-7B-Instruct + YOLOv8m fine-tuned | DGX Spark |
-| LLM (chat) | Aya Expanse 32B (Cohere) — узбекский поддержан | DGX Spark |
-| STT | faster-whisper Large-v3-Turbo | DGX Spark |
-| Drop-off ML | XGBoost (rule-based fallback) | DGX Spark / CPU |
+| Vision (pill+swallow) | Qwen2.5-VL-7B-Instruct AWQ + YOLOv8m fine-tuned | RTX 5090 (vast.ai) |
+| LLM (chat) | Aya Expanse 32B AWQ (Cohere) — узбекский | RTX 5090 (vast.ai) |
+| STT | faster-whisper Large-v3-Turbo INT8 | RTX 5090 (vast.ai) |
+| Drop-off ML | XGBoost (rule-based fallback) | RTX 5090 / CPU |
 | Database | PostgreSQL | Docker / Supabase |
-| Storage (видео) | Local FS / Supabase Storage | DGX local disk |
+| Storage (видео) | Local FS / Supabase Storage | RTX 5090 local disk |
 | Doctor dashboard | Next.js 16 + shadcn/ui + Recharts | Vercel |
 | Auth dashboard | Clerk | Cloud |
-| Serving | vLLM + FastAPI + Ollama | DGX Spark |
+| Serving | vLLM + FastAPI + tmux | RTX 5090 (vast.ai) |
 
-**Никаких платных API**. Anthropic / OpenAI / Google не используются. Полное соответствие ZRU-547.
+**Никаких платных AI API**. Anthropic / OpenAI / Google не используются — все модели self-hosted на собственном GPU-сервере. Готовность к миграции в локальный UZ-датацентр для полного соответствия ZRU-547.
 
 ---
 
@@ -107,7 +108,7 @@ davo-ai/
 │   └── shared/           ← Общие типы, утилиты, i18n
 │
 ├── infra/
-│   ├── dgx/              ← Setup-скрипты для DGX Spark
+│   ├── inference/        ← Setup-скрипты (setup_vast_ai.sh + setup_dgx_spark.sh)
 │   ├── db/               ← Postgres миграции
 │   └── docker/           ← docker-compose для локального dev
 │
@@ -162,20 +163,23 @@ pnpm install
 pnpm dev   # → http://localhost:3000
 ```
 
-### Для DGX Spark (production inference)
+### Для vast.ai RTX 5090 (production inference)
 
 ```bash
-# SSH в DGX
-ssh dgx   # alias настроен в ~/.ssh/config
+# SSH в vast.ai instance
+ssh vast   # alias настроен в ~/.ssh/config (port 1879)
 
 # Запустить setup-скрипт (один раз)
-curl -fsSL https://raw.githubusercontent.com/TemurTurayev/davo-ai/main/infra/dgx/setup_dgx_spark.sh | bash
+cd /workspace
+git clone https://github.com/TemurTurayev/davo-ai.git
+cd davo-ai
+HF_TOKEN=hf_xxx bash infra/inference/setup_vast_ai.sh
 
-# Запустить все inference-серверы
-sudo systemctl start davoai-vllm davoai-vision davoai-whisper davoai-yolo
+# Запустить все inference-серверы (через tmux)
+/workspace/davoai/start_all.sh
 
 # Проверить
-curl https://spark-5.idrock.uz/v1/models
+curl http://localhost:8001/v1/models
 ```
 
 ---

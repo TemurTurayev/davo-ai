@@ -148,7 +148,7 @@ davo-ai/
 │   └── inference/        ← AI-серверы (vLLM, Whisper, YOLO, Verifier, Mock)
 │
 ├── infra/
-│   ├── dgx/              ← setup_dgx_spark.sh
+│   ├── inference/        ← setup_vast_ai.sh + setup_dgx_spark.sh (fallback)
 │   ├── db/               ← Postgres schema + миграции
 │   └── docker/           ← docker-compose для локального dev
 │
@@ -176,7 +176,7 @@ python scripts/generate_synthetic.py --patients 30 --days 90
 # Подготовить YOLO dataset (split + augmentation)
 python scripts/prepare_yolo_dataset.py --augment 3
 
-# Train YOLO (на DGX Spark)
+# Train YOLO (на RTX 5090 (vast.ai))
 python scripts/train_yolo.py --epochs 100 --batch 16
 
 # Сгенерировать pitch deck
@@ -201,7 +201,7 @@ pre-commit run --all-files
 | Telegram Bot Token | https://t.me/BotFather → /newbot |
 | Telegram API ID/Hash | https://my.telegram.org → API development tools |
 | HuggingFace Token | https://huggingface.co/settings/tokens (read access) |
-| DGX Spark SSH | По заявке (см. `~/.claude/CLAUDE.md`) |
+| RTX 5090 (vast.ai) SSH | По заявке (см. `~/.claude/CLAUDE.md`) |
 
 **ВАЖНО**: токены никогда не commit'ить. Только в `.env` (gitignored).
 
@@ -228,8 +228,8 @@ pre-commit run --all-files
 3. `packages/bot/keyboards.py` — language_picker
 
 **Хочется добавить новую AI-модель**:
-- Через Ollama: добавить в `infra/dgx/setup_dgx_spark.sh`
-- Через vLLM: добавить новый systemd-юнит
+- Через vLLM: добавить в `infra/inference/setup_vast_ai.sh` (download + tmux launcher)
+- Через Ollama (для dev): добавить `ollama pull <model>` в docker-compose
 
 ---
 

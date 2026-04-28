@@ -2,10 +2,10 @@
 Davo-AI · YOLO Training Script
 ==============================
 
-Обучает YOLOv8m на TB pills datasete. Запускать на NVIDIA DGX Spark.
+Обучает YOLOv8m на TB pills datasete. Запускать на NVIDIA RTX 5090 (vast.ai).
 
 Использование:
-    # Quick start (на DGX Spark)
+    # Quick start (на RTX 5090 (vast.ai))
     python scripts/train_yolo.py
 
     # С кастомными гиперпарам
@@ -18,7 +18,7 @@ Davo-AI · YOLO Training Script
     python scripts/train_yolo.py --validate-only
 
 Time:
-    - DGX Spark, YOLOv8m, 100 epochs, batch 16, imgsz 640 → ~2-3 часа
+    - RTX 5090 (vast.ai), YOLOv8m, 100 epochs, batch 16, imgsz 640 → ~2-3 часа
     - Mac M4 GPU, YOLOv8n, 100 epochs → ~6-8 часов
 """
 

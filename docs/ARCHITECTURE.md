@@ -13,7 +13,7 @@
                                           │                 │              │
                                           ▼                 ▼              │
                                   ┌────────────┐    ┌──────────────┐       │
-                                  │ DGX Spark  │    │ Local FS     │       │
+                                  │ RTX 5090 (vast.ai)  │    │ Local FS     │       │
                                   │ Inference  │    │ /data/videos │       │
                                   └────────────┘    └──────────────┘       │
                                           │                                │
@@ -40,15 +40,16 @@
 - **Scheduler**: APScheduler, daily reminders в `reminder_time` пациента
 
 ### 2. Inference servers (`packages/inference/`)
-Все запускаются на NVIDIA DGX Spark через systemd.
+Все запускаются на vast.ai RTX 5090 (32 GB VRAM) через tmux sessions.
 
-| Сервер | Порт | Модель | OpenAI-compatible |
-|--------|------|--------|-------------------|
-| LLM | 8001 | Aya Expanse 32B | ✅ (vLLM) |
-| Vision | 8002 | Qwen2.5-VL-7B-Instruct | ✅ (vLLM) |
-| Whisper STT | 8003 | Large-v3-Turbo | Custom FastAPI |
-| YOLO Pills | 8004 | YOLOv8m fine-tuned | Custom FastAPI |
-| Verifier | 8005 | (orchestrator) | Custom FastAPI |
+| Сервер | Порт | Модель | VRAM | OpenAI-compatible |
+|--------|------|--------|------|-------------------|
+| LLM | 8001 | Aya Expanse 32B AWQ (4-bit) | ~17 GB | ✅ (vLLM) |
+| Vision | 8002 | Qwen2.5-VL-7B-Instruct AWQ | ~7 GB | ✅ (vLLM) |
+| Whisper STT | 8003 | Large-v3-Turbo INT8 | ~1.5 GB | Custom FastAPI |
+| YOLO Pills | 8004 | YOLOv8m fine-tuned | ~1 GB | Custom FastAPI |
+| Verifier | 8005 | (orchestrator) | — | Custom FastAPI |
+| **Total** | | | **~28 GB** | (4 GB headroom для KV cache) |
 
 **Verifier orchestrator** (port 8005) — высокоуровневый pipeline:
 1. Принимает video + enrolled face
@@ -78,22 +79,29 @@ Next.js 16 + React 19 + Tailwind 4. Минимальные страницы:
 
 ## Data sovereignty (ZRU-547)
 
-Вся inference — **локально** на DGX Spark в Узбекистане.
+Вся inference — **на собственном GPU-сервере** (Slovenia datacenter, EU/GDPR).
 Никаких вызовов к Anthropic / OpenAI / Google.
 Видео и медданные хранятся в локальной FS / on-prem Postgres.
 
-→ автоматическое соответствие требованию локализации данных (поправка 2021 г.).
+**Production roadmap**: миграция в локальный узбекский датацентр (UzCloud / UCell)
+для полного соответствия требованию локализации данных (поправка 2021 к ZRU-547).
+Архитектура полностью переносима — изменится только IP/SSH endpoint.
 
-## Fallback стратегия (если DGX Spark недоступен)
+## Fallback стратегия (если основной GPU недоступен)
 
-| Компонент | Fallback на Mac M4 |
-|-----------|---------------------|
-| LLM (Aya 32B) | Ollama: `aya:8b-23-q4_K_M` или `qwen2.5:7b` |
+### Mac M4 + Ollama (для разработки)
+| Компонент | Fallback модель |
+|-----------|----------------|
+| LLM | Ollama: `qwen2.5:7b` |
 | Vision | Ollama: `qwen2.5-vl:3b` |
 | STT | faster-whisper `medium` (CPU) |
 | YOLO | `yolov8n` COCO (без fine-tune) |
 
 Качество ниже на 5–15%, но всё ещё локально.
+
+### Mock servers (для разработки бота)
+`python packages/inference/mock_servers.py` — все 4 эндпоинта на одном порту 9000
+с детерминированными mock-ответами. Для unit-тестов и offline-разработки.
 
 ## Deployment timeline (план для хакатона)
 

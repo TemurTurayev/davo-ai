@@ -4,7 +4,7 @@
 
 ## T-1 day (preparation, до хакатона)
 
-- [ ] DGX Spark SSH access — подтверждение (заявка отправлена 2026-04-27)
+- [x] vast.ai RTX 5090 (Slovenia datacenter) — арендован 2026-04-28, $0.589/hr, 200 GB disk, 503 GB RAM
 - [ ] HuggingFace token у каждого члена команды
 - [ ] Telegram bot token у @BotFather (`@DavoAIBot` или `@MindTechDavoBot`)
 - [ ] @BotFather → API ID + API Hash (для Local Bot API)
@@ -22,18 +22,19 @@
 ### H+0 (8:00 — kickoff)
 
 **Кто делает что:**
-- Темур + Дилшода: SSH в DGX Spark, запустить `setup_dgx_spark.sh`
+- Темур + Дилшода: SSH в vast.ai RTX 5090 (Slovenia), запустить `setup_dgx_spark.sh`
 - Мухаммад: docker-compose локальный — Postgres + Local Bot API
 - Саида: pitch deck draft + видео сценарий
 
 **Параллельно**:
 ```bash
 # Темур / Дилшода:
-ssh dgx
+ssh vast
+mkdir -p /workspace && cd /workspace
 git clone https://github.com/TemurTurayev/davo-ai.git
-cd davo-ai/infra/dgx
-HF_TOKEN=hf_xxx bash setup_dgx_spark.sh
-# (~30-40 минут)
+cd davo-ai
+HF_TOKEN=hf_xxx bash infra/inference/setup_vast_ai.sh
+# (~15-20 минут на vast.ai из-за быстрой сети)
 
 # Мухаммад:
 cd davo-ai
@@ -72,7 +73,7 @@ yolo train model=yolov8m.pt \
   data=/opt/davoai/repo/data/tb_pills/dataset.yaml \
   epochs=100 imgsz=640 batch=16 \
   project=/opt/davoai/runs name=tb_pills_v1
-# ~2-3 часа на DGX Spark
+# ~2-3 часа на vast.ai RTX 5090 (Slovenia)
 ```
 
 Параллельно — annotation датасета через Roboflow или CVAT (если ещё не сделано).
@@ -185,15 +186,25 @@ yolo train model=yolov8m.pt \
 
 ---
 
-## Запасной план если DGX Spark не работает
+## Запасной план если vast.ai instance отвалится
 
-1. **Ollama on Mac M4** — fallback стек:
+### Plan B: новый vast.ai instance
+1. Снять snapshot моделей через `huggingface-cli` (на Mac или другом инстансе)
+2. Арендовать новый RTX 5090 в той же Slovenia
+3. Запустить `setup_vast_ai.sh` — модели скачаются за ~15 мин
+
+### Plan C: Mac M4 + Ollama (для демо если совсем плохо)
+1. **Ollama** — fallback стек:
    - `ollama pull qwen2.5:7b`
-   - `ollama pull qwen2.5-vl:3b` (если vision модель доступна)
-   - `ollama pull llama3.2-vision:11b` (альтернатива)
-2. **Whisper-medium** на CPU (5x медленнее, но работает)
+   - `ollama pull qwen2.5-vl:3b`
+   - `ollama pull llama3.2-vision:11b`
+2. **Whisper-medium** на CPU (5x медленнее)
 3. **YOLO без fine-tune** — yolov8n COCO (показываем concept)
-4. **Story-flip**: «Мы планируем DGX Spark, сейчас демо на ноутбуке для скорости»
+4. **Story**: «Демо на ноутбуке для скорости, production на GPU-сервере»
+
+### Plan D: Mock servers (для slides/демо без AI)
+`python packages/inference/mock_servers.py` — детерминированные ответы на порту 9000.
+Подходит если интернет умер совсем.
 
 ---
 

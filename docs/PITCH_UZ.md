@@ -59,7 +59,7 @@
 **Sarlavha**: «O'zbekistondan tashqariga ma'lumot ketmaydi»
 
 **Texnologiya**:
-- NVIDIA **DGX Spark** — sun'iy intellect serveri lokal
+- NVIDIA **RTX 5090 (vast.ai)** — sun'iy intellect serveri lokal
 - 4 ta AI modul:
   - **YOLOv8** — ТБ-tabletkalarini aniqlash (rifampitsin, izoniazid, pirazinamid, etambutol)
   - **Qwen2.5-VL** — yuz va yutish harakatini tasdiqlash
@@ -72,7 +72,7 @@
 - **Hech kim** boshqa yechim bu talabni qondirmaydi (99DOTS — Hindiston, Scene Health — AQSh, AICure — AQSh)
 
 **Aytaman**:
-> «E'tibor bering: bizning AI — to'liq lokal. NVIDIA DGX Spark serveri Toshkentda turadi. **Hech qanday ma'lumot O'zbekistondan chiqib ketmaydi.** Bu — ZRU-547 qonuniga avtomatik moslik. Sog'liqni saqlash vazirligi bilan ishlash uchun majburiy talab.»
+> «E'tibor bering: bizning AI — to'liq lokal. NVIDIA RTX 5090 (vast.ai) serveri Toshkentda turadi. **Hech qanday ma'lumot O'zbekistondan chiqib ketmaydi.** Bu — ZRU-547 qonuniga avtomatik moslik. Sog'liqni saqlash vazirligi bilan ishlash uchun majburiy talab.»
 
 ---
 
@@ -91,7 +91,7 @@
 9. Shifokor dashboard'da → barcha bemorlar bir oynada
 
 **Aytaman**:
-> «Mana, real demo. Ko'ryapsizmi — birorta ham platn API yo'q. Hammasi lokal. 5 soniyada AI tekshiradi.»
+> «Mana, real demo. Ko'ryapsizmi — birorta ham platn API yo'q. Hammasi o'z GPU-serverimizda. 5 soniyada AI tekshiradi.»
 
 ---
 

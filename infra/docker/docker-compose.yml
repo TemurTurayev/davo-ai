@@ -40,7 +40,7 @@ services:
       - telegram-bot-data:/var/lib/telegram-bot-api
 
   # ─── Ollama (для dev/тестов на Mac M4) ─────────────────
-  # На production это запускается на DGX Spark
+  # На production это запускается на RTX 5090 (vast.ai)
   ollama:
     image: ollama/ollama:latest
     container_name: davoai-ollama

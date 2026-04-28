@@ -105,11 +105,12 @@ python scripts/prepare_yolo_dataset.py \
 
 ## Шаг 4 · Training
 
-### На NVIDIA DGX Spark (production)
+### На RTX 5090 (vast.ai) (production)
 
 ```bash
-ssh dgx
-cd /opt/davoai/repo
+ssh vast
+cd /workspace/davo-ai
+source /workspace/venv/bin/activate
 python scripts/train_yolo.py \
   --data data/tb_pills_yolo/dataset.yaml \
   --model yolov8m.pt \
@@ -118,7 +119,7 @@ python scripts/train_yolo.py \
   --device 0
 ```
 
-**Время**: ~2-3 часа. Best weights → `runs/detect/tb_pills_v1/weights/best.pt`.
+**Время**: ~1.5-2 часа на RTX 5090 (Blackwell SM 12.0). Best weights → `runs/detect/tb_pills_v1/weights/best.pt`.
 
 ### На Mac M4 (fallback / dev)
 

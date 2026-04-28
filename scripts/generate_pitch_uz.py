@@ -406,18 +406,18 @@ def slide_4_solution(c: canvas.Canvas) -> None:
 
 
 def slide_5_ai_architecture(c: canvas.Canvas) -> None:
-    """KEY SLIDE — local AI на DGX Spark."""
+    """KEY SLIDE — local AI на RTX 5090 (vast.ai)."""
     slide_frame(c, 5, 9, PRIMARY)
     y = header(
         c, "Lokal AI · O'zbekistonda · O'zbek tilida", "Texnologiya · Ключевой слайд", PRIMARY
     )
 
-    # Big DGX Spark callout
+    # Big RTX 5090 (vast.ai) callout
     c.setFillColor(BLACK)
     c.roundRect(M_LEFT, y - 3 * cm, CONTENT_W, 3 * cm, 0.3 * cm, fill=1, stroke=0)
     c.setFillColor(colors.HexColor("#76b900"))  # NVIDIA green
     c.setFont("DV-B", 22)
-    c.drawString(M_LEFT + 0.6 * cm, y - 1.4 * cm, "NVIDIA DGX Spark")
+    c.drawString(M_LEFT + 0.6 * cm, y - 1.4 * cm, "NVIDIA RTX 5090")
     c.setFillColor(WHITE)
     c.setFont("DV", 11)
     c.drawString(
