@@ -42,6 +42,10 @@ export function TodayScreen({ locale }: { locale: string }) {
   const t = (uz: string, ru: string, en: string) =>
     lang === "uz" ? uz : lang === "ru" ? ru : en;
 
+  // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP — never after early returns.
+  // Greeting (deferred to client-only to avoid hydration mismatch)
+  const [greeting, setGreeting] = useState("");
+
   // Redirect chain: no rules consent → /rules; no prescription → /awaiting-prescription
   useEffect(() => {
     if (!rulesConsent.accepted) {
@@ -53,6 +57,18 @@ export function TodayScreen({ locale }: { locale: string }) {
     }
   }, [prescription, rulesConsent.accepted, router, locale]);
 
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setGreeting(
+      hour < 12
+        ? t("Xayrli tong", "Доброе утро", "Good morning")
+        : hour < 18
+        ? t("Hayrli kun", "Добрый день", "Good day")
+        : t("Hayrli kech", "Добрый вечер", "Good evening"),
+    );
+  }, [locale]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Now safe to early-return after all hooks above have been called
   if (!prescription) return null;
 
   // Today's dose state
@@ -69,19 +85,6 @@ export function TodayScreen({ locale }: { locale: string }) {
   // Today's prescribed drugs (single dose for DS-TB)
   const todaysDose = prescription.doses[0];
   const doseTime = todaysDose?.time ?? "08:00";
-
-  // Greeting (deferred to client-only to avoid hydration mismatch)
-  const [greeting, setGreeting] = useState("");
-  useEffect(() => {
-    const hour = new Date().getHours();
-    setGreeting(
-      hour < 12
-        ? t("Xayrli tong", "Доброе утро", "Good morning")
-        : hour < 18
-        ? t("Hayrli kun", "Добрый день", "Good day")
-        : t("Hayrli kech", "Добрый вечер", "Good evening"),
-    );
-  }, [locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStartDose = () => {
     getWebApp()?.HapticFeedback.impactOccurred("medium");
