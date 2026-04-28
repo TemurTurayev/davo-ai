@@ -77,16 +77,28 @@ verify_env() {
     mkdir -p "$HF_HOME"
 }
 
-# ─── Install Python packages ────────────────────────────────────────────────
+# ─── Install Python packages (в venv чтобы не конфликтовать с Debian system pip) ─
 install_deps() {
     section "Install Python packages (vLLM + faster-whisper + ultralytics)"
 
+    local VENV="/workspace/venv"
+    if [[ ! -d "$VENV" ]]; then
+        log "Creating venv at $VENV"
+        python3 -m venv "$VENV" || apt-get install -y python3-venv && python3 -m venv "$VENV"
+    fi
+
+    # shellcheck disable=SC1091
+    source "$VENV/bin/activate"
+    log "Activated venv: $(python --version)"
+
     pip install --upgrade --quiet pip wheel setuptools
 
-    # vLLM — production LLM serving (поддерживает AWQ)
+    # vLLM — production LLM serving
+    log "Installing vLLM (это займёт 2-3 минуты)"
     pip install --upgrade --quiet "vllm>=0.7.0"
 
     # Whisper / YOLO / FastAPI
+    log "Installing serving deps"
     pip install --upgrade --quiet \
         faster-whisper \
         ctranslate2 \
@@ -96,11 +108,21 @@ install_deps() {
         python-multipart \
         pillow \
         opencv-python-headless \
-        "huggingface-hub>=0.25.0" \
+        "huggingface-hub[cli]>=0.25.0" \
         loguru \
         rich
 
     log "Python packages OK"
+
+    # Записываем activation script для удобства
+    cat > "$DAVOAI_HOME/activate.sh" <<EOF
+#!/usr/bin/env bash
+source $VENV/bin/activate
+export DAVOAI_HOME=$DAVOAI_HOME
+export DAVOAI_REPO=$DAVOAI_REPO
+export HF_HOME=$HF_HOME
+EOF
+    chmod +x "$DAVOAI_HOME/activate.sh"
 }
 
 # ─── Clone or pull repo ─────────────────────────────────────────────────────
@@ -122,12 +144,13 @@ get_repo() {
 # ─── HF login ───────────────────────────────────────────────────────────────
 hf_login() {
     section "HuggingFace login"
+    # shellcheck disable=SC1091
+    source /workspace/venv/bin/activate
     if [[ -z "${HF_TOKEN:-}" ]]; then
-        warn "HF_TOKEN не задан в env. Скачивание моделей может потребовать auth."
-        warn "Получить: https://huggingface.co/settings/tokens"
-        warn "Затем: export HF_TOKEN=hf_xxx && bash $0"
+        warn "HF_TOKEN не задан в env. Используем anonymous (rate limit 5/min)."
+        warn "Получить: https://huggingface.co/settings/tokens → export HF_TOKEN=hf_xxx"
     else
-        echo "$HF_TOKEN" | huggingface-cli login --token "$HF_TOKEN"
+        echo "$HF_TOKEN" | huggingface-cli login --token "$HF_TOKEN" || warn "HF login failed, продолжаем"
         log "HF authenticated"
     fi
 }
@@ -135,6 +158,8 @@ hf_login() {
 # ─── Download models ────────────────────────────────────────────────────────
 download_models() {
     section "Download models (~25 GB total)"
+    # shellcheck disable=SC1091
+    source /workspace/venv/bin/activate
 
     cd "$DAVOAI_HOME/models"
 
@@ -188,6 +213,7 @@ write_launchers() {
 # Davo-AI · launch all 4 inference servers in tmux sessions
 set -euo pipefail
 DAVOAI_HOME="${DAVOAI_HOME:-/workspace/davoai}"
+source /workspace/venv/bin/activate
 
 # Kill existing sessions
 for s in davoai-llm davoai-vision davoai-whisper davoai-yolo davoai-verifier; do
@@ -272,6 +298,7 @@ write_yolo_launcher() {
 # Davo-AI · YOLO fine-tuning launcher
 set -euo pipefail
 DAVOAI_REPO="${DAVOAI_REPO:-/workspace/davo-ai}"
+source /workspace/venv/bin/activate
 
 cd "$DAVOAI_REPO"
 
@@ -304,17 +331,19 @@ TRAIN
 
 # ─── Smoke test for installed packages ──────────────────────────────────────
 smoke_test() {
-    section "Smoke test"
+    section "Smoke test (используем venv)"
+    # shellcheck disable=SC1091
+    source /workspace/venv/bin/activate
 
-    python3 -c "
+    python -c "
 import torch
 print(f'PyTorch: {torch.__version__}')
 print(f'CUDA available: {torch.cuda.is_available()}')
 print(f'CUDA device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"none\"}')
 print(f'CUDA capability: {torch.cuda.get_device_capability(0) if torch.cuda.is_available() else \"none\"}')
 "
-    log "vLLM version: $(python3 -c 'import vllm; print(vllm.__version__)' 2>&1 | tail -1)"
-    log "ultralytics: $(python3 -c 'import ultralytics; print(ultralytics.__version__)' 2>&1 | tail -1)"
+    log "vLLM version: $(python -c 'import vllm; print(vllm.__version__)' 2>&1 | tail -1)"
+    log "ultralytics: $(python -c 'import ultralytics; print(ultralytics.__version__)' 2>&1 | tail -1)"
 }
 
 # ─── Main ───────────────────────────────────────────────────────────────────
