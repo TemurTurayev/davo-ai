@@ -1,21 +1,35 @@
 "use client";
 
 /**
- * Today screen — main patient view
- * Shows: today's dose status, big record CTA, recent week heatmap, quick action chips.
+ * Today screen — main patient view (premium glassmorphism redesign)
  *
- * Per UX research: ONE TAP to record dose. No menus, no dialogs.
+ * Sections:
+ *   1. Greeting + treatment day badge
+ *   2. Hero glass card (gradient brand) — countdown / "dose taken" state + Record CTA
+ *   3. Progress arc + KPI strip (medications)
+ *   4. Last 7 days mini-heatmap (glass card)
+ *   5. AI insight of the day
+ *   6. Quick actions grid (4 actions)
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Camera, Check, Heart, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  Camera, Check, Heart, Sparkles, BookOpen, Trophy, MessageCircleHeart,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { GlassCard } from "@/components/ui/glass-card";
 import { useTBControlStore } from "@/lib/store";
 import { getWebApp } from "@/lib/telegram";
 import { treatmentDay, regimenLengthDays } from "@/lib/utils";
 import { TBControlLogo } from "@/components/brand/tb-control-logo";
+import { ProgressArc } from "./progress-arc";
+import { DoseCountdown } from "./dose-countdown";
+import { MedicationStrip } from "./medication-strip";
+import { AIInsightCard } from "./ai-insight-card";
 
 export function TodayScreen({ locale }: { locale: string }) {
   const router = useRouter();
@@ -24,7 +38,6 @@ export function TodayScreen({ locale }: { locale: string }) {
 
   const { profile, doses, isOnboarded } = useTBControlStore();
 
-  // Redirect to onboarding if not yet
   useEffect(() => {
     if (!isOnboarded) router.push(`/${locale}/onboarding`);
   }, [isOnboarded, router, locale]);
@@ -42,7 +55,12 @@ export function TodayScreen({ locale }: { locale: string }) {
     d.setDate(d.getDate() - (6 - i));
     const iso = d.toISOString().slice(0, 10);
     const dose = doses.find((dd) => dd.date === iso);
-    return { date: iso, status: dose?.status ?? (iso === today ? "today" : "future") };
+    return {
+      date: iso,
+      day: d.getDate(),
+      weekday: d.toLocaleDateString(locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US", { weekday: "short" }),
+      status: dose?.status ?? (iso === today ? "today" : "future"),
+    };
   });
 
   const onRecord = () => {
@@ -50,136 +68,255 @@ export function TodayScreen({ locale }: { locale: string }) {
     router.push(`/${locale}/today/record`);
   };
 
+  const drugs = profile.regimen === "dstb"
+    ? ["rifampicin", "isoniazid", "pyrazinamide", "ethambutol"]
+    : profile.regimen === "mdr"
+      ? ["bedaquiline", "linezolid", "moxifloxacin"]
+      : ["combo_fdc"];
+
   return (
-    <main className="px-5 pt-6 pb-6">
-      {/* Greeting */}
-      <header className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-sm text-[var(--color-slate-500)]">
-            {greeting(locale)}, {profile.fullName.split(" ").pop()}
-          </p>
-          <p className="text-xs tabular text-[var(--color-slate-400)] mt-0.5">
-            {t("day_of", { current: dayN, total })}
-          </p>
-        </div>
-        <TBControlLogo size={32} />
-      </header>
+    <main className="bg-aurora min-h-screen relative">
+      {/* Decorative orbs */}
+      <div className="orb orb-teal w-72 h-72 -left-24 -top-24 animate-float-slow" />
+      <div className="orb orb-coral w-64 h-64 -right-20 top-32 animate-float-slow" style={{ animationDelay: "3s" }} />
+      <div className="orb orb-indigo w-48 h-48 left-12 bottom-32 opacity-30" />
 
-      {/* Hero card — today's status */}
-      <section className="card relative overflow-hidden mb-5" style={{
-        background: isDoseTaken
-          ? "linear-gradient(135deg, var(--color-success) 0%, #34D399 100%)"
-          : "linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-dark) 100%)",
-        color: "white",
-      }}>
-        {/* Decorative shape */}
-        <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-white/10" />
-        <div className="absolute -right-4 -bottom-8 w-32 h-32 rounded-full bg-white/5" />
-
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-3">
-            {isDoseTaken ? <Check size={20} /> : <Sparkles size={20} />}
-            <span className="text-sm font-medium opacity-90">
-              {isDoseTaken ? t("verified") : t("title")}
-            </span>
+      <div className="relative px-5 pt-6 pb-8 z-10">
+        {/* Greeting */}
+        <motion.header
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-5"
+        >
+          <div>
+            <p className="text-sm text-[var(--color-slate-500)]">
+              {greeting(locale)}, {profile.fullName.split(" ")[0] || ""}
+            </p>
+            <p className="text-xs tabular text-[var(--color-slate-400)] mt-0.5">
+              {t("day_of", { current: dayN, total })}
+            </p>
           </div>
+          <TBControlLogo size={32} />
+        </motion.header>
 
-          <h1 className="text-2xl font-heading font-extrabold leading-tight mb-1">
-            {isDoseTaken
-              ? localize(locale, {
-                  uz: "Bugungi dozani qabul qildingiz",
-                  ru: "Доза на сегодня принята",
-                  en: "You've taken today's dose",
-                })
-              : localize(locale, {
-                  uz: "Bugun yana bir qadam",
-                  ru: "Ещё один день вместе",
-                  en: "Another day, another step",
-                })}
-          </h1>
-          <p className="text-sm opacity-85 max-w-xs">
-            {isDoseTaken
-              ? localize(locale, {
-                  uz: "Davom eting. Sog'lik qaytmoqda.",
-                  ru: "Продолжайте. Здоровье возвращается.",
-                  en: "Keep going. Health is returning.",
-                })
-              : t("ready_to_record")}
-          </p>
+        {/* Hero — gradient glass with countdown / verified state */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+        >
+          <GlassCard
+            variant={isDoseTaken ? "accent" : "brand"}
+            className="relative overflow-hidden p-6 mb-5"
+          >
+            <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-white/15 animate-pulse-soft" />
+            <div className="absolute -right-2 -bottom-12 w-40 h-40 rounded-full bg-white/10" />
 
-          {!isDoseTaken && (
-            <Button
-              onClick={onRecord}
-              size="lg"
-              className="mt-5 bg-white text-[var(--color-brand-dark)] hover:bg-white/90 hover:text-[var(--color-brand-dark)] shadow-none"
-            >
-              <Camera size={20} />
-              {t("record_button")}
-            </Button>
-          )}
-        </div>
-      </section>
+            <div className="relative flex items-start gap-4">
+              <div className="flex-1 min-w-0">
+                {isDoseTaken ? (
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Check size={18} />
+                      <span className="text-xs uppercase tracking-wider font-bold opacity-90">
+                        {t("verified")}
+                      </span>
+                    </div>
+                    <h1 className="text-2xl font-heading font-extrabold leading-tight mb-1">
+                      {localize(locale, {
+                        uz: "Bugungi doza qabul qilindi",
+                        ru: "Доза на сегодня принята",
+                        en: "Today's dose is done",
+                      })}
+                    </h1>
+                    <p className="text-sm opacity-90">
+                      {localize(locale, {
+                        uz: "Davom eting. Sog'lik qaytmoqda.",
+                        ru: "Продолжайте. Здоровье возвращается.",
+                        en: "Keep going. Health is returning.",
+                      })}
+                    </p>
+                  </>
+                ) : (
+                  <DoseCountdown reminderTime={profile.reminderTime} locale={locale} />
+                )}
 
-      {/* Recent 7 days mini heatmap */}
-      <section className="card mb-5">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--color-slate-500)] mb-3">
-          {localize(locale, {
-            uz: "Oxirgi 7 kun",
-            ru: "Последние 7 дней",
-            en: "Last 7 days",
-          })}
-        </h2>
-        <div className="flex items-end justify-between gap-1.5">
-          {recent7.map((d) => (
-            <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5">
-              <div
-                className="w-full aspect-square rounded-md"
-                data-status={d.status}
-                style={{
-                  background:
-                    d.status === "taken" ? "var(--color-success)" :
-                    d.status === "missed" ? "rgba(239,68,68,0.5)" :
-                    d.status === "today" ? "var(--color-brand-soft)" :
-                    "var(--color-mist)",
-                  border: d.status === "today" ? "2px solid var(--color-brand)" : "none",
-                }}
-              />
-              <span className="text-[10px] tabular text-[var(--color-slate-400)]">
-                {new Date(d.date).getDate()}
-              </span>
+                {!isDoseTaken && (
+                  <Button
+                    onClick={onRecord}
+                    className="mt-5 bg-white text-[var(--color-brand-dark)] hover:bg-white shadow-lg hover:shadow-xl"
+                  >
+                    <Camera size={20} />
+                    {t("record_button")}
+                  </Button>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
+          </GlassCard>
+        </motion.section>
 
-      {/* Quick actions */}
-      <section className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => router.push(`/${locale}/chat`)}
-          className="card text-left hover:shadow-md transition"
+        {/* Progress arc + medication strip */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4 mb-5"
         >
-          <Heart size={22} className="text-[var(--color-accent)] mb-2" />
-          <h3 className="font-heading font-bold text-sm">
-            {localize(locale, { uz: "Yon ta'sirlar", ru: "Побочки", en: "Side effects" })}
-          </h3>
-          <p className="text-xs text-[var(--color-slate-500)] mt-0.5">
-            {localize(locale, { uz: "Maslahat oling", ru: "Получить совет", en: "Get advice" })}
-          </p>
-        </button>
-        <button
-          onClick={() => router.push(`/${locale}/calendar`)}
-          className="card text-left hover:shadow-md transition"
+          <GlassCard className="flex items-center justify-center">
+            <ProgressArc
+              current={dayN}
+              total={total}
+              size={180}
+              label={localize(locale, { uz: "Yo'l bosildi", ru: "Пройдено", en: "Complete" })}
+              sublabel={`${dayN} / ${total} ${localize(locale, { uz: "kun", ru: "дн", en: "days" })}`}
+            />
+          </GlassCard>
+
+          <div className="flex flex-col gap-4">
+            <GlassCard>
+              <MedicationStrip drugs={drugs} locale={locale} />
+            </GlassCard>
+
+            <Glass7DayHeatmap data={recent7} locale={locale} />
+          </div>
+        </motion.section>
+
+        {/* AI insight */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-5"
         >
-          <Sparkles size={22} className="text-[var(--color-brand)] mb-2" />
-          <h3 className="font-heading font-bold text-sm">
-            {localize(locale, { uz: "Progress", ru: "Прогресс", en: "Progress" })}
-          </h3>
-          <p className="text-xs text-[var(--color-slate-500)] mt-0.5">
-            {Math.round((dayN / total) * 100)}% {localize(locale, { uz: "yoʻl", ru: "пути", en: "complete" })}
-          </p>
-        </button>
-      </section>
+          <AIInsightCard locale={locale} treatmentDay={dayN} />
+        </motion.section>
+
+        {/* Quick actions grid */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-2 gap-3"
+        >
+          <QuickAction
+            icon={<MessageCircleHeart />}
+            tone="accent"
+            title={localize(locale, { uz: "Yon ta'sirlar", ru: "Побочки", en: "Side effects" })}
+            sub={localize(locale, { uz: "Maslahat oling", ru: "Получить совет", en: "Get advice" })}
+            onClick={() => router.push(`/${locale}/chat`)}
+          />
+          <QuickAction
+            icon={<BookOpen />}
+            tone="brand"
+            title={localize(locale, { uz: "Bilim", ru: "Знания", en: "Learn" })}
+            sub={localize(locale, { uz: "Dorilar haqida", ru: "О препаратах", en: "About drugs" })}
+            onClick={() => router.push(`/${locale}/learn`)}
+          />
+          <QuickAction
+            icon={<Trophy />}
+            tone="indigo"
+            title={localize(locale, { uz: "Yutuqlar", ru: "Достижения", en: "Achievements" })}
+            sub={localize(locale, { uz: "Sizning bosqichlaringiz", ru: "Ваши вехи", en: "Your milestones" })}
+            onClick={() => router.push(`/${locale}/achievements`)}
+          />
+          <QuickAction
+            icon={<Heart />}
+            tone="rose"
+            title={localize(locale, { uz: "Shifokor", ru: "Врач", en: "Doctor" })}
+            sub={localize(locale, { uz: "Yozishish", ru: "Написать", en: "Message" })}
+            onClick={() => router.push(`/${locale}/messages`)}
+          />
+        </motion.section>
+      </div>
     </main>
+  );
+}
+
+/* ── Subcomponents ─────────────────────────────────────── */
+
+function Glass7DayHeatmap({
+  data,
+  locale,
+}: {
+  data: { date: string; day: number; weekday: string; status: string }[];
+  locale: string;
+}) {
+  const titleMap = {
+    uz: "Oxirgi 7 kun",
+    ru: "Последние 7 дней",
+    en: "Last 7 days",
+  };
+  const lang = (locale === "uz" || locale === "ru" ? locale : "en") as "uz" | "ru" | "en";
+
+  return (
+    <GlassCard>
+      <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-slate-500)] mb-3">
+        {titleMap[lang]}
+      </p>
+      <div className="flex items-end justify-between gap-1.5">
+        {data.map((d, i) => (
+          <motion.div
+            key={d.date}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + i * 0.04 }}
+            className="flex-1 flex flex-col items-center gap-1.5"
+          >
+            <div
+              className="w-full aspect-square rounded-md"
+              style={{
+                background:
+                  d.status === "taken" ? "var(--color-success)" :
+                  d.status === "missed" ? "rgba(239,68,68,0.5)" :
+                  d.status === "today" ? "var(--color-brand-soft)" :
+                  "var(--color-mist)",
+                boxShadow: d.status === "today" ? "0 0 0 2px var(--color-brand)" : "none",
+              }}
+            />
+            <span className="text-[10px] tabular text-[var(--color-slate-500)] font-medium">
+              {d.day}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </GlassCard>
+  );
+}
+
+function QuickAction({
+  icon,
+  tone,
+  title,
+  sub,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  tone: "brand" | "accent" | "indigo" | "rose";
+  title: string;
+  sub: string;
+  onClick: () => void;
+}) {
+  const toneMap = {
+    brand: { bg: "from-[var(--color-brand)]/15 to-[var(--color-brand)]/5", icon: "text-[var(--color-brand)]" },
+    accent: { bg: "from-[var(--color-accent)]/15 to-[var(--color-accent)]/5", icon: "text-[var(--color-accent)]" },
+    indigo: { bg: "from-indigo-500/15 to-indigo-500/5", icon: "text-indigo-500" },
+    rose: { bg: "from-rose-500/15 to-rose-500/5", icon: "text-rose-500" },
+  } as const;
+
+  return (
+    <button
+      onClick={() => {
+        getWebApp()?.HapticFeedback.selectionChanged();
+        onClick();
+      }}
+      className="glass text-left hover:scale-[1.02] active:scale-[0.99] transition-transform"
+    >
+      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${toneMap[tone].bg} flex items-center justify-center mb-2`}>
+        <span className={toneMap[tone].icon}>{icon}</span>
+      </div>
+      <h3 className="font-heading font-bold text-sm">{title}</h3>
+      <p className="text-xs text-[var(--color-slate-500)] mt-0.5">{sub}</p>
+    </button>
   );
 }
 

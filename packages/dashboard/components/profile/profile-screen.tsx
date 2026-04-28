@@ -203,7 +203,7 @@ function LinkRow({
   href: string;
 }) {
   return (
-    <Link
+    <a
       href={href}
       className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 hover:bg-[var(--color-mist)]/30 -mx-4 px-4 rounded-lg"
     >
@@ -213,6 +213,6 @@ function LinkRow({
       <span className="flex-1 text-sm font-medium">{label}</span>
       {value && <span className="text-sm text-[var(--color-slate-500)]">{value}</span>}
       <ChevronRight size={16} className="text-[var(--color-slate-400)]" />
-    </Link>
+    </a>
   );
 }
