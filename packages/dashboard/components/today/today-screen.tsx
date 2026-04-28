@@ -70,14 +70,18 @@ export function TodayScreen({ locale }: { locale: string }) {
   const todaysDose = prescription.doses[0];
   const doseTime = todaysDose?.time ?? "08:00";
 
-  // Greeting
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12
-      ? t("Xayrli tong", "Доброе утро", "Good morning")
-      : hour < 18
-      ? t("Hayrli kun", "Добрый день", "Good day")
-      : t("Hayrli kech", "Добрый вечер", "Good evening");
+  // Greeting (deferred to client-only to avoid hydration mismatch)
+  const [greeting, setGreeting] = useState("");
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setGreeting(
+      hour < 12
+        ? t("Xayrli tong", "Доброе утро", "Good morning")
+        : hour < 18
+        ? t("Hayrli kun", "Добрый день", "Good day")
+        : t("Hayrli kech", "Добрый вечер", "Good evening"),
+    );
+  }, [locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStartDose = () => {
     getWebApp()?.HapticFeedback.impactOccurred("medium");

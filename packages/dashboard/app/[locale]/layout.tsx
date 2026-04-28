@@ -73,12 +73,13 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
     <html
       lang={locale}
       className={`${inter.variable} ${manrope.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
     >
       <head>
         {/* Telegram WebApp script — must load early */}
         <script src="https://telegram.org/js/telegram-web-app.js" async />
       </head>
-      <body className="bg-organic">
+      <body className="bg-organic" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages} locale={locale}>
           <TelegramInit />
           {children}
