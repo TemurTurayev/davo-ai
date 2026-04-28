@@ -8,15 +8,18 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
-
 from i18n import Lang, t
 
 
 def language_picker() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text=t("start.lang_uz", "uz"), callback_data="lang:uz"),
-        InlineKeyboardButton(text=t("start.lang_ru", "ru"), callback_data="lang:ru"),
-    ]])
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text=t("start.lang_uz", "uz"), callback_data="lang:uz"),
+                InlineKeyboardButton(text=t("start.lang_ru", "ru"), callback_data="lang:ru"),
+            ]
+        ]
+    )
 
 
 def main_menu(lang: Lang) -> ReplyKeyboardMarkup:
@@ -48,21 +51,25 @@ def drug_picker(lang: Lang, selected: list[str]) -> InlineKeyboardMarkup:
     rows = []
     for code, key in drugs:
         prefix = "✅ " if code in selected else "⬜ "
-        rows.append([
-            InlineKeyboardButton(text=prefix + t(key, lang), callback_data=f"drug:{code}")
-        ])
-    rows.append([
-        InlineKeyboardButton(text=t("register.drug_done", lang), callback_data="drug:done")
-    ])
+        rows.append(
+            [InlineKeyboardButton(text=prefix + t(key, lang), callback_data=f"drug:{code}")]
+        )
+    rows.append(
+        [InlineKeyboardButton(text=t("register.drug_done", lang), callback_data="drug:done")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def phone_request(lang: Lang) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(
-            text=("📱 Raqamni ulashish" if lang == "uz" else "📱 Поделиться номером"),
-            request_contact=True,
-        )]],
+        keyboard=[
+            [
+                KeyboardButton(
+                    text=("📱 Raqamni ulashish" if lang == "uz" else "📱 Поделиться номером"),
+                    request_contact=True,
+                )
+            ]
+        ],
         resize_keyboard=True,
         one_time_keyboard=True,
     )

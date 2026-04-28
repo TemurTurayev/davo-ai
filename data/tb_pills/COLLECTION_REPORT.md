@@ -174,7 +174,7 @@ DailyMed убрал картинки с RxImage в 2024 — официально
 - Производные работы ДОЛЖНЫ распространяться под той же лицензией CC BY-SA 4.0
 - Это влияет на лицензию финального датасета: если опубликуем weights — должны быть CC BY-SA 4.0 или совместимая
 
-**Public Domain**: 
+**Public Domain**:
 - `Multidrug_therapy_(MDT)_for_the_treatment_of_leprosy.jpg` — без ограничений
 
 **Рекомендация**: При публикации модели Davo-AI указать атрибуцию в `LICENSE-DATASET.md`:

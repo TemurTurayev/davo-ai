@@ -22,7 +22,6 @@ Davo-AI · YOLO Dataset Preparation
 from __future__ import annotations
 
 import argparse
-import json
 import random
 import shutil
 from pathlib import Path
@@ -69,7 +68,7 @@ def split_dataset(
         by_class.setdefault(cid, []).append((path, cid))
 
     train, val, test = [], [], []
-    for cid, group in by_class.items():
+    for _cid, group in by_class.items():
         rng.shuffle(group)
         n = len(group)
         n_train = max(1, int(n * train_ratio))
@@ -196,12 +195,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", type=Path, default=Path("data/tb_pills"))
     parser.add_argument("--dst", type=Path, default=Path("data/tb_pills_yolo"))
-    parser.add_argument("--labels-src", type=Path, default=None,
-                        help="Папка с Roboflow YOLO labels (опционально)")
+    parser.add_argument(
+        "--labels-src", type=Path, default=None, help="Папка с Roboflow YOLO labels (опционально)"
+    )
     parser.add_argument("--train-ratio", type=float, default=0.70)
     parser.add_argument("--val-ratio", type=float, default=0.20)
-    parser.add_argument("--augment", type=int, default=1,
-                        help="Multiplier (1 = no augmentation, 3 = ×3)")
+    parser.add_argument(
+        "--augment", type=int, default=1, help="Multiplier (1 = no augmentation, 3 = ×3)"
+    )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -215,7 +216,7 @@ def main() -> None:
     if not items:
         raise SystemExit("❌ No images found")
 
-    print(f"📦 Найдено {len(items)} изображений в {len(set(c for _, c in items))} классах")
+    print(f"📦 Найдено {len(items)} изображений в {len({c for _, c in items})} классах")
     by_class: dict[int, int] = {}
     for _, cid in items:
         by_class[cid] = by_class.get(cid, 0) + 1
@@ -235,22 +236,32 @@ def main() -> None:
     if dst_dir.exists():
         shutil.rmtree(dst_dir)
 
-    n_train = copy_with_label(train, dst_dir / "train" / "images", dst_dir / "train" / "labels", args.labels_src)
-    n_val = copy_with_label(val, dst_dir / "val" / "images", dst_dir / "val" / "labels", args.labels_src)
-    n_test = copy_with_label(test, dst_dir / "test" / "images", dst_dir / "test" / "labels", args.labels_src)
+    n_train = copy_with_label(
+        train, dst_dir / "train" / "images", dst_dir / "train" / "labels", args.labels_src
+    )
+    n_val = copy_with_label(
+        val, dst_dir / "val" / "images", dst_dir / "val" / "labels", args.labels_src
+    )
+    n_test = copy_with_label(
+        test, dst_dir / "test" / "images", dst_dir / "test" / "labels", args.labels_src
+    )
 
     print(f"\n✓ Скопировано: train {n_train}  val {n_val}  test {n_test}")
 
     # Augmentation (только train!)
     if args.augment > 1:
-        n_aug = augment_split(train, dst_dir / "train" / "images", dst_dir / "train" / "labels", args.augment)
+        n_aug = augment_split(
+            train, dst_dir / "train" / "images", dst_dir / "train" / "labels", args.augment
+        )
         print(f"✓ Augmentation: +{n_aug} изображений в train (multiplier ×{args.augment})")
 
     # dataset.yaml
     write_dataset_yaml(dst_dir)
     print(f"\n✓ dataset.yaml: {dst_dir / 'dataset.yaml'}")
-    print(f"\nГотово к training:")
-    print(f"  yolo train model=yolov8m.pt data={dst_dir}/dataset.yaml epochs=100 imgsz=640 batch=16")
+    print("\nГотово к training:")
+    print(
+        f"  yolo train model=yolov8m.pt data={dst_dir}/dataset.yaml epochs=100 imgsz=640 batch=16"
+    )
 
 
 if __name__ == "__main__":

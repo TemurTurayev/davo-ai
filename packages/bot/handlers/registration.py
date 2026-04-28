@@ -3,16 +3,14 @@
 from __future__ import annotations
 
 import datetime as dt
-from pathlib import Path
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-from loguru import logger
-
 from config import settings
 from i18n import Lang, t
 from keyboards import drug_picker, main_menu, phone_request
+from loguru import logger
 from services.db import SessionLocal, upsert_patient
 from states import Registration
 
@@ -182,9 +180,9 @@ async def reg_time(message: Message, state: FSMContext) -> None:
             drugs=data["drugs"],
             reminder_time=time_obj,
             enrolled_face_path=data.get("face_path"),
-            enrolled_face_at=dt.datetime.now(dt.timezone.utc),
-            consent_cross_border=False,         # local-first stack — no cross-border
-            consent_at=dt.datetime.now(dt.timezone.utc),
+            enrolled_face_at=dt.datetime.now(dt.UTC),
+            consent_cross_border=False,  # local-first stack — no cross-border
+            consent_at=dt.datetime.now(dt.UTC),
         )
         await session.commit()
         logger.info(f"Patient registered: {patient.id} (tg={patient.telegram_id})")

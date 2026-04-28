@@ -137,16 +137,18 @@ def _detections_from_result(result, img_w: int, img_h: int) -> list[Detection]:
     if result.boxes is None or result.boxes.xyxy is None:
         return out
 
-    boxes = result.boxes.xyxy.cpu().numpy()       # [n, 4] в пикселях
-    confs = result.boxes.conf.cpu().numpy()       # [n]
-    cls_ids = result.boxes.cls.cpu().numpy()      # [n]
+    boxes = result.boxes.xyxy.cpu().numpy()  # [n, 4] в пикселях
+    confs = result.boxes.conf.cpu().numpy()  # [n]
+    cls_ids = result.boxes.cls.cpu().numpy()  # [n]
+
+    model_names = _model.names if _model is not None else {}
 
     for box, conf, cls_id in zip(boxes, confs, cls_ids, strict=True):
         cid = int(cls_id)
         out.append(
             Detection(
                 class_id=cid,
-                class_name=CLASS_NAMES.get(cid, _model.names.get(cid, f"cls_{cid}")),
+                class_name=CLASS_NAMES.get(cid, model_names.get(cid, f"cls_{cid}")),
                 confidence=float(round(conf, 4)),
                 bbox=[
                     float(round(box[0] / img_w, 4)),
@@ -288,6 +290,7 @@ def main():
         os.environ["YOLO_WEIGHTS"] = args.weights
 
     import uvicorn
+
     uvicorn.run(
         "yolo_server:app",
         host=args.host,

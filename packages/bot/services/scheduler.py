@@ -3,21 +3,22 @@
 from __future__ import annotations
 
 import datetime as dt
+from typing import Literal
 
 from aiogram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from config import settings
+from i18n import t
 from loguru import logger
 from sqlalchemy import select
 
-from config import settings
-from i18n import t
 from services.db import Patient, SessionLocal
 
 
 async def send_daily_reminders(bot: Bot) -> None:
     """Каждую минуту проверяем кому пора отправить reminder."""
-    now = dt.datetime.now(dt.timezone.utc).astimezone(dt.timezone(dt.timedelta(hours=5)))  # +05 Tashkent
+    now = dt.datetime.now(dt.UTC).astimezone(dt.timezone(dt.timedelta(hours=5)))  # +05 Tashkent
     current_hm = now.strftime("%H:%M")
 
     async with SessionLocal() as session:
@@ -33,7 +34,8 @@ async def send_daily_reminders(bot: Bot) -> None:
         if patient_hm != current_hm:
             continue
         try:
-            lang = p.language or "uz"
+            lang_str = p.language or "uz"
+            lang: Literal["uz", "ru"] = "uz" if lang_str == "uz" else "ru"
             text = t("reminder.daily", lang, name=p.full_name.split()[0] if p.full_name else "")
             await bot.send_message(p.telegram_id, text)
             logger.info(f"Reminder sent to {p.telegram_id}")

@@ -6,7 +6,6 @@ from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
-
 from i18n import Lang, t
 from keyboards import language_picker, main_menu
 from services.db import SessionLocal, get_patient_by_tg
@@ -75,11 +74,14 @@ async def cmd_progress(message: Message) -> None:
             return
 
         from services.db import AdherenceMetrics
+
         metrics = await session.get(AdherenceMetrics, patient.id)
 
     lang: Lang = patient.language  # type: ignore[assignment]
     if metrics is None or metrics.total_doses_scheduled == 0:
-        await message.answer("Hali davolanish boshlanmagan." if lang == "uz" else "Лечение ещё не начато.")
+        await message.answer(
+            "Hali davolanish boshlanmagan." if lang == "uz" else "Лечение ещё не начато."
+        )
         return
 
     days = (
@@ -89,11 +91,14 @@ async def cmd_progress(message: Message) -> None:
     )
     days_count = days.days if days else 0
 
-    await message.answer(t(
-        "progress.summary", lang,
-        days=days_count,
-        confirmed=metrics.total_doses_verified,
-        adherence=int((metrics.adherence_rate or 0) * 100),
-        streak=metrics.current_streak,
-        drugs=", ".join(patient.drugs) if patient.drugs else "—",
-    ))
+    await message.answer(
+        t(
+            "progress.summary",
+            lang,
+            days=days_count,
+            confirmed=metrics.total_doses_verified,
+            adherence=int((metrics.adherence_rate or 0) * 100),
+            streak=metrics.current_streak,
+            drugs=", ".join(patient.drugs) if patient.drugs else "—",
+        )
+    )

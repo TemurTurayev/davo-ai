@@ -20,7 +20,7 @@ from pathlib import Path
 
 import matplotlib
 from reportlab.lib import colors
-from reportlab.lib.units import cm, mm
+from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.pdfmetrics import registerFontFamily
 from reportlab.pdfbase.ttfonts import TTFont
@@ -35,8 +35,8 @@ pdfmetrics.registerFont(TTFont("DV-BI", os.path.join(MPL_FONTS, "DejaVuSans-Bold
 registerFontFamily("DV", normal="DV", bold="DV-B", italic="DV-I", boldItalic="DV-BI")
 
 # ─── 16:9 Slide size ────────────────────────────────────────────────────────
-SLIDE_W = 33.87 * cm    # 13.33 in
-SLIDE_H = 19.05 * cm    # 7.5 in
+SLIDE_W = 33.87 * cm  # 13.33 in
+SLIDE_H = 19.05 * cm  # 7.5 in
 
 # ─── Цветовая палитра ───────────────────────────────────────────────────────
 PRIMARY = colors.HexColor("#1e40af")
@@ -59,7 +59,9 @@ M_BOTTOM = 1.2 * cm
 CONTENT_W = SLIDE_W - M_LEFT - M_RIGHT
 
 
-def slide_frame(c: canvas.Canvas, slide_num: int, total: int, color_strip: colors.Color = PRIMARY) -> None:
+def slide_frame(
+    c: canvas.Canvas, slide_num: int, total: int, color_strip: colors.Color = PRIMARY
+) -> None:
     """Рамка слайда: цветная полоска слева + футер."""
     # Цветная полоска слева (8mm)
     c.setFillColor(color_strip)
@@ -72,7 +74,9 @@ def slide_frame(c: canvas.Canvas, slide_num: int, total: int, color_strip: color
     c.drawRightString(SLIDE_W - M_RIGHT, 0.5 * cm, f"{slide_num} / {total}")
 
 
-def header(c: canvas.Canvas, title: str, eyebrow: str | None = None, color: colors.Color = PRIMARY) -> float:
+def header(
+    c: canvas.Canvas, title: str, eyebrow: str | None = None, color: colors.Color = PRIMARY
+) -> float:
     """Шапка слайда, возвращает Y-координату конца."""
     y = SLIDE_H - M_TOP
     if eyebrow:
@@ -95,8 +99,12 @@ def header(c: canvas.Canvas, title: str, eyebrow: str | None = None, color: colo
 
 def callout_box(
     c: canvas.Canvas,
-    x: float, y: float, w: float, h: float,
-    title: str, body: str,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    title: str,
+    body: str,
     color: colors.Color = PRIMARY,
     text_color: colors.Color = WHITE,
 ) -> None:
@@ -115,8 +123,14 @@ def callout_box(
 
 
 def stat_card(
-    c: canvas.Canvas, x: float, y: float, w: float, h: float,
-    big_value: str, label: str, color: colors.Color = PRIMARY,
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    big_value: str,
+    label: str,
+    color: colors.Color = PRIMARY,
 ) -> None:
     c.setFillColor(WHITE)
     c.roundRect(x, y - h, w, h, 0.2 * cm, fill=1, stroke=0)
@@ -136,17 +150,19 @@ def stat_card(
         line1 = ""
         for w_ in words:
             if len(line1) + len(w_) < 22:
-                line1 += (w_ + " ")
+                line1 += w_ + " "
             else:
                 break
-        line2 = label[len(line1):]
+        line2 = label[len(line1) :]
         c.drawString(x + 0.4 * cm, y - 1.9 * cm, line1.strip())
         c.drawString(x + 0.4 * cm, y - 2.3 * cm, line2.strip())
     else:
         c.drawString(x + 0.4 * cm, y - 1.9 * cm, label)
 
 
-def bullet_line(c: canvas.Canvas, x: float, y: float, text: str, size: int = 11, color: colors.Color = TEXT) -> None:
+def bullet_line(
+    c: canvas.Canvas, x: float, y: float, text: str, size: int = 11, color: colors.Color = TEXT
+) -> None:
     c.setFillColor(color)
     c.setFont("DV", size)
     c.circle(x + 0.1 * cm, y + 0.1 * cm, 0.07 * cm, fill=1, stroke=0)
@@ -173,6 +189,7 @@ def quote_box(c: canvas.Canvas, x: float, y: float, w: float, text: str, source:
 # ════════════════════════════════════════════════════════════════════════════
 # SLIDES
 # ════════════════════════════════════════════════════════════════════════════
+
 
 def slide_1_cover(c: canvas.Canvas) -> None:
     """Cover — Davo-AI logo + tagline."""
@@ -204,7 +221,11 @@ def slide_1_cover(c: canvas.Canvas) -> None:
     # Tagline
     c.setFont("DV-B", 13)
     c.setFillColor(colors.HexColor("#a5b4fc"))
-    c.drawString(M_LEFT, SLIDE_H - 11.5 * cm, "DOT → VOT · Telegram · Lokal AI · O'zbekistonda, o'zbek tilida")
+    c.drawString(
+        M_LEFT,
+        SLIDE_H - 11.5 * cm,
+        "DOT → VOT · Telegram · Lokal AI · O'zbekistonda, o'zbek tilida",
+    )
 
     # Команда
     c.setFillColor(WHITE)
@@ -222,14 +243,28 @@ def slide_2_problem(c: canvas.Canvas) -> None:
 
     # Левая часть: статистика
     stat_card(c, M_LEFT, y, 7 * cm, 3 * cm, "Top 30", "ВОЗ ро'yxatida eng og'ir TB yuki", DANGER)
-    stat_card(c, M_LEFT + 7.5 * cm, y, 7 * cm, 3 * cm, "27%", "MDR-TB davolanishni tashlab ketadi (Qoraqalpog'iston)", DANGER)
-    stat_card(c, M_LEFT + 15 * cm, y, 7 * cm, 3 * cm, "300", "случаев на 100K в Qoraqalpog'istonda", WARN)
+    stat_card(
+        c,
+        M_LEFT + 7.5 * cm,
+        y,
+        7 * cm,
+        3 * cm,
+        "27%",
+        "MDR-TB davolanishni tashlab ketadi (Qoraqalpog'iston)",
+        DANGER,
+    )
+    stat_card(
+        c, M_LEFT + 15 * cm, y, 7 * cm, 3 * cm, "300", "случаев на 100K в Qoraqalpog'istonda", WARN
+    )
 
     y -= 4 * cm
 
     # Цитата
     quote_box(
-        c, M_LEFT, y, CONTENT_W,
+        c,
+        M_LEFT,
+        y,
+        CONTENT_W,
         "27% MDR-TB пациентов в Қарақалпағстан тинча беради давалашды — ҳар тўртинчи!",
         "Karakalpakstan MDR-TB cohort 2009-2012, n=1190 (PLOS PMC4964095)",
     )
@@ -363,26 +398,38 @@ def slide_4_solution(c: canvas.Canvas) -> None:
     c.drawString(M_LEFT + 0.6 * cm, y - 3 * cm, "Adherence relative risk = 2.79 (95% CI 2.26–3.45)")
     c.setFont("DV-I", 9)
     c.setFillColor(MUTED)
-    c.drawString(M_LEFT + 0.6 * cm, y - 3.5 * cm, "Cureus systematic review 2024 · CDC признал VDOT эквивалентом DOT в 2023")
+    c.drawString(
+        M_LEFT + 0.6 * cm,
+        y - 3.5 * cm,
+        "Cureus systematic review 2024 · CDC признал VDOT эквивалентом DOT в 2023",
+    )
 
 
 def slide_5_ai_architecture(c: canvas.Canvas) -> None:
     """KEY SLIDE — local AI на DGX Spark."""
     slide_frame(c, 5, 9, PRIMARY)
-    y = header(c, "Lokal AI · O'zbekistonda · O'zbek tilida", "Texnologiya · Ключевой слайд", PRIMARY)
+    y = header(
+        c, "Lokal AI · O'zbekistonda · O'zbek tilida", "Texnologiya · Ключевой слайд", PRIMARY
+    )
 
     # Big DGX Spark callout
     c.setFillColor(BLACK)
     c.roundRect(M_LEFT, y - 3 * cm, CONTENT_W, 3 * cm, 0.3 * cm, fill=1, stroke=0)
-    c.setFillColor(colors.HexColor("#76b900"))   # NVIDIA green
+    c.setFillColor(colors.HexColor("#76b900"))  # NVIDIA green
     c.setFont("DV-B", 22)
     c.drawString(M_LEFT + 0.6 * cm, y - 1.4 * cm, "NVIDIA DGX Spark")
     c.setFillColor(WHITE)
     c.setFont("DV", 11)
-    c.drawString(M_LEFT + 0.6 * cm, y - 2.2 * cm, "GB10 Grace Blackwell · 128 GB unified memory · 1 PFLOP FP4")
+    c.drawString(
+        M_LEFT + 0.6 * cm,
+        y - 2.2 * cm,
+        "GB10 Grace Blackwell · 128 GB unified memory · 1 PFLOP FP4",
+    )
     c.setFont("DV", 10)
     c.setFillColor(colors.HexColor("#94a3b8"))
-    c.drawString(M_LEFT + 0.6 * cm, y - 2.7 * cm, "Hech qanday ma'lumot O'zbekistondan chiqib ketmaydi")
+    c.drawString(
+        M_LEFT + 0.6 * cm, y - 2.7 * cm, "Hech qanday ma'lumot O'zbekistondan chiqib ketmaydi"
+    )
 
     y -= 3.5 * cm
 
@@ -421,8 +468,11 @@ def slide_5_ai_architecture(c: canvas.Canvas) -> None:
     c.drawString(M_LEFT + 0.4 * cm, y - 0.6 * cm, "ZRU-547 muvofiqlik · 2021 lokalizatsiya talabi")
     c.setFillColor(TEXT)
     c.setFont("DV", 9)
-    c.drawString(M_LEFT + 0.4 * cm, y - 1.2 * cm,
-                 "Hech bir raqobatchi (99DOTS · Scene · AICure · MSF) bu talabni qondirmaydi — biz qondiramiz")
+    c.drawString(
+        M_LEFT + 0.4 * cm,
+        y - 1.2 * cm,
+        "Hech bir raqobatchi (99DOTS · Scene · AICure · MSF) bu talabni qondirmaydi — biz qondiramiz",
+    )
 
 
 def slide_6_demo(c: canvas.Canvas) -> None:
@@ -440,7 +490,6 @@ def slide_6_demo(c: canvas.Canvas) -> None:
         ("7", "Shifokor", "dashboard · faqat shubhali", "real-time"),
     ]
 
-    step_w = CONTENT_W
     step_h = 1.1 * cm
     for i, (num, title, desc, time) in enumerate(steps):
         sy = y - i * (step_h + 0.2 * cm)
@@ -461,7 +510,15 @@ def slide_6_demo(c: canvas.Canvas) -> None:
 
         # Time badge
         c.setFillColor(BG)
-        c.roundRect(SLIDE_W - M_RIGHT - 2.5 * cm, sy - 0.9 * cm, 2.2 * cm, 0.7 * cm, 0.15 * cm, fill=1, stroke=0)
+        c.roundRect(
+            SLIDE_W - M_RIGHT - 2.5 * cm,
+            sy - 0.9 * cm,
+            2.2 * cm,
+            0.7 * cm,
+            0.15 * cm,
+            fill=1,
+            stroke=0,
+        )
         c.setFillColor(MUTED)
         c.setFont("DV-B", 9)
         c.drawCentredString(SLIDE_W - M_RIGHT - 1.4 * cm, sy - 0.6 * cm, time)
@@ -473,7 +530,9 @@ def slide_7_market(c: canvas.Canvas) -> None:
 
     # 3 stat cards
     stat_card(c, M_LEFT, y, 9.5 * cm, 3 * cm, "$1.4M", "TB Узбекистан TAM (yillik)", PRIMARY)
-    stat_card(c, M_LEFT + 10 * cm, y, 9.5 * cm, 3 * cm, "$300M+", "Multi-disease TAM (CIS, 5 yil)", ACCENT)
+    stat_card(
+        c, M_LEFT + 10 * cm, y, 9.5 * cm, 3 * cm, "$300M+", "Multi-disease TAM (CIS, 5 yil)", ACCENT
+    )
     stat_card(c, M_LEFT + 20 * cm, y, 7 * cm, 3 * cm, "3:1", "LTV/CAC ratio", WARN)
 
     y -= 4 * cm
@@ -509,7 +568,9 @@ def slide_7_market(c: canvas.Canvas) -> None:
     # Roadmap
     c.setFillColor(MUTED)
     c.setFont("DV-I", 9)
-    c.drawString(M_LEFT, 1.1 * cm, "Roadmap: TB → diabet (1.2M bemor UZ) → gipertoniya (3M) → pediatric")
+    c.drawString(
+        M_LEFT, 1.1 * cm, "Roadmap: TB → diabet (1.2M bemor UZ) → gipertoniya (3M) → pediatric"
+    )
 
 
 def slide_8_competitors(c: canvas.Canvas) -> None:
@@ -518,12 +579,12 @@ def slide_8_competitors(c: canvas.Canvas) -> None:
 
     # Comparison table
     rows = [
-        ("",            "AI tasdiq", "Telegram", "O'zbekcha", "Lokal AI", "Public TB"),
-        ("99DOTS",      "✗",         "✗",        "✗",         "✗",        "✓"),
-        ("Scene Health","✗",         "✗",        "✗",         "✗",        "✓"),
-        ("AICure",      "✓",         "✗",        "✗",         "✗",        "✗ (pharma)"),
-        ("MSF VDOT (UZ)","✗ (sync)", "✗",        "via medsestra","✗",      "✓"),
-        ("Davo-AI",     "✓",         "✓",        "✓",         "✓",        "✓"),
+        ("", "AI tasdiq", "Telegram", "O'zbekcha", "Lokal AI", "Public TB"),
+        ("99DOTS", "✗", "✗", "✗", "✗", "✓"),
+        ("Scene Health", "✗", "✗", "✗", "✗", "✓"),
+        ("AICure", "✓", "✗", "✗", "✗", "✗ (pharma)"),
+        ("MSF VDOT (UZ)", "✗ (sync)", "✗", "via medsestra", "✗", "✓"),
+        ("Davo-AI", "✓", "✓", "✓", "✓", "✓"),
     ]
 
     cell_w = [4.5 * cm, 3.4 * cm, 3.4 * cm, 3.4 * cm, 3.4 * cm, 4.0 * cm]
@@ -567,12 +628,18 @@ def slide_8_competitors(c: canvas.Canvas) -> None:
     c.roundRect(M_LEFT, table_y - 2 * cm, CONTENT_W, 2 * cm, 0.2 * cm, fill=1, stroke=0)
     c.setFillColor(DANGER)
     c.setFont("DV-B", 13)
-    c.drawString(M_LEFT + 0.5 * cm, table_y - 0.7 * cm,
-                 "99DOTS qo'ng'iroqni ko'rsatadi · Davo-AI yutishni ko'radi")
+    c.drawString(
+        M_LEFT + 0.5 * cm,
+        table_y - 0.7 * cm,
+        "99DOTS qo'ng'iroqni ko'rsatadi · Davo-AI yutishni ko'radi",
+    )
     c.setFillColor(TEXT)
     c.setFont("DV", 10)
-    c.drawString(M_LEFT + 0.5 * cm, table_y - 1.4 * cm,
-                 "99DOTS пропускает 40–60% non-adherent (Oxford CID 2020, urine isoniazid validation)")
+    c.drawString(
+        M_LEFT + 0.5 * cm,
+        table_y - 1.4 * cm,
+        "99DOTS пропускает 40–60% non-adherent (Oxford CID 2020, urine isoniazid validation)",
+    )
 
 
 def slide_9_team_close(c: canvas.Canvas) -> None:
@@ -650,6 +717,7 @@ def slide_9_team_close(c: canvas.Canvas) -> None:
 
 
 # ════════════════════════════════════════════════════════════════════════════
+
 
 def build_pitch(output_path: Path) -> None:
     c = canvas.Canvas(

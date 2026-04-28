@@ -7,10 +7,9 @@ from pathlib import Path
 
 from aiogram import F, Router
 from aiogram.types import Message
-from loguru import logger
-
 from config import settings
 from i18n import Lang, t
+from loguru import logger
 from services.db import IntakeVideo, SessionLocal, get_patient_by_tg, update_streak
 from services.inference import get_inference_client
 
@@ -77,8 +76,13 @@ async def on_video(message: Message) -> None:
             file_path=str(video_path),
             file_size_bytes=video.file_size,
             duration_seconds=duration,
-            status=("verified" if result["verified"] else
-                    "review_required" if result["review_required"] else "unverified"),
+            status=(
+                "verified"
+                if result["verified"]
+                else "review_required"
+                if result["review_required"]
+                else "unverified"
+            ),
             overall_confidence=result["confidence"],
             face_match=result["face_match"],
             face_match_confidence=result["face_match_confidence"],
@@ -88,7 +92,7 @@ async def on_video(message: Message) -> None:
             swallow_detected=result["swallow_detected"],
             swallow_confidence=result["swallow_confidence"],
             raw_ai_findings=result.get("raw_findings"),
-            processed_at=dt.datetime.now(dt.timezone.utc),
+            processed_at=dt.datetime.now(dt.UTC),
         )
         session.add(record)
         await session.flush()
@@ -102,11 +106,14 @@ async def on_video(message: Message) -> None:
         await session.commit()
 
     if result["verified"]:
-        await message.answer(t(
-            "video.verified", lang,
-            confidence=int(result["confidence"] * 100),
-            streak=new_streak,
-        ))
+        await message.answer(
+            t(
+                "video.verified",
+                lang,
+                confidence=int(result["confidence"] * 100),
+                streak=new_streak,
+            )
+        )
     elif result["review_required"]:
         await message.answer(t("video.under_review", lang))
     else:

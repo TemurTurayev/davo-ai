@@ -30,19 +30,41 @@ import numpy as np
 # ─── Configuration ──────────────────────────────────────────────────────────
 DRUGS_REGIMENS = [
     ["rifampicin", "isoniazid", "pyrazinamide", "ethambutol"],  # Initial phase 2 mo
-    ["rifampicin", "isoniazid"],                                # Continuation 4 mo
-    ["combo_fdc"],                                              # FDC (RHZE)
+    ["rifampicin", "isoniazid"],  # Continuation 4 mo
+    ["combo_fdc"],  # FDC (RHZE)
 ]
 
 UZ_NAMES = [
-    "Sardor Karimov", "Diyora Tursunova", "Bekzod Olimov", "Madina Saidova",
-    "Anvar Yusupov", "Zarina Norova", "Botir Rahimov", "Lola Akhmedova",
-    "Jasur Ismailov", "Nargiza Mirzayeva", "Akmal Tashkentbaev", "Gulnara Aliyeva",
-    "Rustam Saidov", "Nodira Karimova", "Otabek Yuldoshev", "Sevara Khalilova",
-    "Bakhtiyor Nazarov", "Dilfuza Razzakova", "Sanjar Ergashev", "Munisa Jalilova",
-    "Farkhod Soliev", "Aziza Tukhtayeva", "Murat Berdimuratov", "Aygul Nazirova",
-    "Timur Saparov", "Ozoda Rakhmatova", "Kamoliddin Yodgorov", "Shahnoza Atayeva",
-    "Ulugbek Mahmudov", "Iroda Suleymanova",
+    "Sardor Karimov",
+    "Diyora Tursunova",
+    "Bekzod Olimov",
+    "Madina Saidova",
+    "Anvar Yusupov",
+    "Zarina Norova",
+    "Botir Rahimov",
+    "Lola Akhmedova",
+    "Jasur Ismailov",
+    "Nargiza Mirzayeva",
+    "Akmal Tashkentbaev",
+    "Gulnara Aliyeva",
+    "Rustam Saidov",
+    "Nodira Karimova",
+    "Otabek Yuldoshev",
+    "Sevara Khalilova",
+    "Bakhtiyor Nazarov",
+    "Dilfuza Razzakova",
+    "Sanjar Ergashev",
+    "Munisa Jalilova",
+    "Farkhod Soliev",
+    "Aziza Tukhtayeva",
+    "Murat Berdimuratov",
+    "Aygul Nazirova",
+    "Timur Saparov",
+    "Ozoda Rakhmatova",
+    "Kamoliddin Yodgorov",
+    "Shahnoza Atayeva",
+    "Ulugbek Mahmudov",
+    "Iroda Suleymanova",
 ]
 
 REGIONS = ["Tashkent", "Samarkand", "Bukhara", "Karakalpakstan", "Fergana", "Andijan", "Namangan"]
@@ -52,11 +74,11 @@ SIDE_EFFECT_TEXTS_UZ = [
     "Boshim aylanyapti, charchashayapdim",
     "Ichim qotgan",
     "Tirnaq dori ta'mi yomon",
-    "Ko'zlarim sariq bo'lib qolgandek",      # ⚠️ потенциально опасно
-    "Siydigim qoraygan",                      # ⚠️ потенциально опасно
+    "Ko'zlarim sariq bo'lib qolgandek",  # ⚠️ потенциально опасно
+    "Siydigim qoraygan",  # ⚠️ потенциально опасно
     "Bo'g'imlar og'riyapti",
     "Uyqum yomonlashgan",
-    "Ko'rishim biroz xira",                    # ⚠️ ethambutol
+    "Ko'rishim biroz xira",  # ⚠️ ethambutol
 ]
 
 SIDE_EFFECT_TEXTS_RU = [
@@ -64,11 +86,11 @@ SIDE_EFFECT_TEXTS_RU = [
     "Кружится голова, слабость",
     "Запор уже три дня",
     "Тошнит после препарата",
-    "Глаза стали желтоватыми",                # ⚠️
-    "Моча тёмная стала",                       # ⚠️
+    "Глаза стали желтоватыми",  # ⚠️
+    "Моча тёмная стала",  # ⚠️
     "Болят суставы",
     "Плохо сплю по ночам",
-    "Зрение немного хуже стало",              # ⚠️
+    "Зрение немного хуже стало",  # ⚠️
 ]
 
 
@@ -169,18 +191,20 @@ def gen_patient(idx: int, days: int) -> dict:
         # Severity: красные флаги в тексте → high
         red_flags = ["sariq", "qora siy", "ko'rish", "Глаза", "Моча тёмная", "Зрение"]
         is_red = any(flag in text for flag in red_flags)
-        severity = "high" if is_red else random.choices(
-            ["low", "medium", "high"], weights=[60, 30, 10]
-        )[0]
+        severity = (
+            "high" if is_red else random.choices(["low", "medium", "high"], weights=[60, 30, 10])[0]
+        )
 
-        side_effects.append({
-            "day_offset": day_offset,
-            "occurred_at": (treatment_start + dt.timedelta(days=day_offset)).isoformat(),
-            "text": text,
-            "severity": severity,
-            "is_expected": severity in {"low", "medium"},
-            "escalated": severity in {"high", "emergency"},
-        })
+        side_effects.append(
+            {
+                "day_offset": day_offset,
+                "occurred_at": (treatment_start + dt.timedelta(days=day_offset)).isoformat(),
+                "text": text,
+                "severity": severity,
+                "is_expected": severity in {"low", "medium"},
+                "escalated": severity in {"high", "emergency"},
+            }
+        )
 
     adherence_rate = sum(adherence) / len(adherence) if adherence else 0
     drop_off_risk = {
@@ -201,7 +225,7 @@ def gen_patient(idx: int, days: int) -> dict:
         "treatment_started_at": treatment_start.isoformat(),
         "drugs": regimen,
         "reminder_time": f"{random.randint(7, 10):02d}:00",
-        "profile": profile,                   # для дебага и обучения ML
+        "profile": profile,  # для дебага и обучения ML
         "adherence_rate": round(adherence_rate, 3),
         "current_streak": current_streak,
         "longest_streak": longest,
@@ -238,22 +262,45 @@ def main() -> None:
 
     # CSV для ML training (одна строка = один пациент с фичами)
     import csv
+
     with open(out_dir / "cohort_features.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow([
-            "patient_id", "profile", "birth_year", "language", "region",
-            "drugs_count", "treatment_days", "adherence_rate",
-            "current_streak", "longest_streak", "side_effect_count",
-            "high_severity_se_count", "drop_off_risk_score",
-        ])
+        w.writerow(
+            [
+                "patient_id",
+                "profile",
+                "birth_year",
+                "language",
+                "region",
+                "drugs_count",
+                "treatment_days",
+                "adherence_rate",
+                "current_streak",
+                "longest_streak",
+                "side_effect_count",
+                "high_severity_se_count",
+                "drop_off_risk_score",
+            ]
+        )
         for p in cohort:
             high_se = sum(1 for se in p["side_effects"] if se["severity"] in {"high", "emergency"})
-            w.writerow([
-                p["id"], p["profile"], p["birth_year"], p["language"], p["region"],
-                len(p["drugs"]), p["total_doses"], p["adherence_rate"],
-                p["current_streak"], p["longest_streak"], len(p["side_effects"]),
-                high_se, p["drop_off_risk_score"],
-            ])
+            w.writerow(
+                [
+                    p["id"],
+                    p["profile"],
+                    p["birth_year"],
+                    p["language"],
+                    p["region"],
+                    len(p["drugs"]),
+                    p["total_doses"],
+                    p["adherence_rate"],
+                    p["current_streak"],
+                    p["longest_streak"],
+                    len(p["side_effects"]),
+                    high_se,
+                    p["drop_off_risk_score"],
+                ]
+            )
 
     # Sample SQL inserts для seed
     with open(out_dir / "seed_patients.sql", "w", encoding="utf-8") as f:
@@ -282,9 +329,9 @@ def main() -> None:
         print(f"    {prof:8s}: {count:3d}  (avg adherence: {avg:.1%})")
     print(f"  Total side effects: {sum(len(p['side_effects']) for p in cohort)}")
     print(f"  Output: {out_dir}/")
-    print(f"    cohort.json (full data)")
-    print(f"    cohort_features.csv (for ML)")
-    print(f"    seed_patients.sql (DB seed)")
+    print("    cohort.json (full data)")
+    print("    cohort_features.csv (for ML)")
+    print("    seed_patients.sql (DB seed)")
 
 
 if __name__ == "__main__":

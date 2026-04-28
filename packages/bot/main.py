@@ -11,10 +11,9 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from loguru import logger
-
 from config import settings
 from handlers import chat, registration, start, video
+from loguru import logger
 from services.scheduler import setup_scheduler
 
 

@@ -65,7 +65,7 @@ app = FastAPI(title="Davo-AI · Verification Orchestrator", lifespan=lifespan)
 # ─── Schemas ────────────────────────────────────────────────────────────────
 class VerificationResult(BaseModel):
     verified: bool
-    confidence: float                   # 0..1 общий
+    confidence: float  # 0..1 общий
     face_match: bool
     face_match_confidence: float
     pill_visible: bool
@@ -73,7 +73,7 @@ class VerificationResult(BaseModel):
     pill_confidence: float
     swallow_detected: bool
     swallow_confidence: float
-    review_required: bool               # True если confidence < 0.8
+    review_required: bool  # True если confidence < 0.8
     raw_findings: dict[str, Any]
 
 
@@ -169,15 +169,9 @@ async def verify_with_vision(
         {"type": "text", "text": f"Video keyframes ({len(keyframes)} штук):"},
     ]
     for ts, img in keyframes:
-        content.append(
-            {"type": "text", "text": f"Frame at {ts:.1f}s:"}
-        )
-        content.append(
-            {"type": "image_url", "image_url": {"url": img_to_b64(img)}}
-        )
-    content.append(
-        {"type": "text", "text": "Верни ТОЛЬКО JSON, ничего больше."}
-    )
+        content.append({"type": "text", "text": f"Frame at {ts:.1f}s:"})
+        content.append({"type": "image_url", "image_url": {"url": img_to_b64(img)}})
+    content.append({"type": "text", "text": "Верни ТОЛЬКО JSON, ничего больше."})
 
     payload = {
         "model": VISION_MODEL,
@@ -298,6 +292,7 @@ def main():
     args = parser.parse_args()
 
     import uvicorn
+
     uvicorn.run("verification_orchestrator:app", host=args.host, port=args.port)
 
 

@@ -2,4 +2,4 @@
 
 from . import chat, registration, start, video
 
-__all__ = ["start", "registration", "video", "chat"]
+__all__ = ["chat", "registration", "start", "video"]

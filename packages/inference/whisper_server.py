@@ -27,7 +27,6 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
 from faster_whisper import WhisperModel
 from pydantic import BaseModel
 
@@ -136,13 +135,16 @@ def _transcribe_sync(
     language: str,
     initial_prompt: str | None,
 ) -> TranscribeResponse:
+    if _model is None:
+        raise RuntimeError("Whisper model not loaded")
+
     lang = None if language == "auto" else language
 
     segments_iter, info = _model.transcribe(
         path,
         language=lang,
         initial_prompt=initial_prompt,
-        vad_filter=True,                 # отсекает тишину
+        vad_filter=True,  # отсекает тишину
         vad_parameters={"min_silence_duration_ms": 500},
         beam_size=5,
         word_timestamps=False,
@@ -180,6 +182,7 @@ def main() -> None:
     args = parser.parse_args()
 
     import uvicorn
+
     uvicorn.run(
         "whisper_server:app",
         host=args.host,

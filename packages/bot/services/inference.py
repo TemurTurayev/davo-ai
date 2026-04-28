@@ -13,9 +13,8 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from loguru import logger
-
 from config import settings
+from loguru import logger
 
 
 class InferenceClient:
@@ -131,7 +130,9 @@ async def triage_side_effect(
     """Триаж побочного эффекта через LLM."""
     client = get_inference_client()
     drugs_str = ", ".join(drugs) or "rifampicin, isoniazid, pyrazinamide, ethambutol"
-    prompt = TB_SYSTEM_PROMPT_UZ + f"\n\nBemor dorilari: {drugs_str}\nFoydalanuvchi tili: {user_lang}"
+    prompt = (
+        TB_SYSTEM_PROMPT_UZ + f"\n\nBemor dorilari: {drugs_str}\nFoydalanuvchi tili: {user_lang}"
+    )
 
     raw = await client.chat(
         messages=[
@@ -142,6 +143,7 @@ async def triage_side_effect(
     )
 
     import re
+
     match = re.search(r"\{.*\}", raw, re.DOTALL)
     if not match:
         return {

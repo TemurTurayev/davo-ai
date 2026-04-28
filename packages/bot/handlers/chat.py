@@ -7,10 +7,9 @@ from pathlib import Path
 
 from aiogram import F, Router
 from aiogram.types import Message
-from loguru import logger
-
 from config import settings
 from i18n import Lang, t
+from loguru import logger
 from services.db import SessionLocal, SideEffect, get_patient_by_tg
 from services.inference import get_inference_client, triage_side_effect
 
@@ -56,14 +55,16 @@ async def on_voice(message: Message) -> None:
 
     user_text = stt_result.get("text", "").strip()
     if not user_text:
-        await message.answer("Iltimos, qaytadan ayting" if lang == "uz" else "Пожалуйста, повторите")
+        await message.answer(
+            "Iltimos, qaytadan ayting" if lang == "uz" else "Пожалуйста, повторите"
+        )
         return
 
     # Показываем что распознали (с возможностью редактировать)
     confirm_msg = (
         f"📝 Eshitganim:\n\n«{user_text}»\n\nTo'g'ri bo'lsa — qayta yozing yoki tasdiqlang."
-        if lang == "uz" else
-        f"📝 Распознано:\n\n«{user_text}»\n\nЕсли неверно — перепишите."
+        if lang == "uz"
+        else f"📝 Распознано:\n\n«{user_text}»\n\nЕсли неверно — перепишите."
     )
     await message.answer(confirm_msg)
 

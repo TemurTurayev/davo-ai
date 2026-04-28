@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from typing import Optional
 
+from config import settings
 from sqlalchemy import (
     ARRAY,
     JSON,
@@ -21,7 +21,6 @@ from sqlalchemy import (
     Text,
     Time,
     select,
-    update,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import (
@@ -30,8 +29,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-
-from config import settings
 
 
 class Base(DeclarativeBase):
@@ -47,27 +44,31 @@ class Patient(Base):
 
     full_name: Mapped[str] = mapped_column(String(200))
     birth_year: Mapped[int] = mapped_column(SmallInteger)
-    phone: Mapped[Optional[str]] = mapped_column(String(30))
+    phone: Mapped[str | None] = mapped_column(String(30))
 
     language: Mapped[str] = mapped_column(String(2), default="uz")
     timezone: Mapped[str] = mapped_column(String(50), default="Asia/Tashkent")
 
-    treatment_started_at: Mapped[Optional[dt.date]] = mapped_column(Date)
+    treatment_started_at: Mapped[dt.date | None] = mapped_column(Date)
     drugs: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     reminder_time: Mapped[dt.time] = mapped_column(Time, default=dt.time(8, 0))
 
-    enrolled_face_path: Mapped[Optional[str]] = mapped_column(Text)
-    enrolled_face_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    enrolled_face_path: Mapped[str | None] = mapped_column(Text)
+    enrolled_face_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
 
-    doctor_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))
-    clinic_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))
+    doctor_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    clinic_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
 
     consent_cross_border: Mapped[bool] = mapped_column(Boolean, default=False)
-    consent_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    consent_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
 
-    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=dt.datetime.now)
-    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=dt.datetime.now)
-    deleted_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=dt.datetime.now
+    )
+    updated_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=dt.datetime.now
+    )
+    deleted_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class IntakeVideo(Base):
@@ -75,27 +76,29 @@ class IntakeVideo(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patients.id"))
-    dose_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))
+    dose_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
 
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
-    file_size_bytes: Mapped[Optional[int]] = mapped_column(BigInteger)
-    duration_seconds: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))
+    file_size_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    duration_seconds: Mapped[float | None] = mapped_column(Numeric(5, 2))
     mime_type: Mapped[str] = mapped_column(String(50), default="video/mp4")
 
     status: Mapped[str] = mapped_column(String(30), default="pending")
-    overall_confidence: Mapped[Optional[float]] = mapped_column(Numeric(4, 3))
-    face_match: Mapped[Optional[bool]] = mapped_column(Boolean)
-    face_match_confidence: Mapped[Optional[float]] = mapped_column(Numeric(4, 3))
-    pill_visible: Mapped[Optional[bool]] = mapped_column(Boolean)
-    pill_drugs_detected: Mapped[Optional[list[str]]] = mapped_column(ARRAY(String))
-    pill_confidence: Mapped[Optional[float]] = mapped_column(Numeric(4, 3))
-    swallow_detected: Mapped[Optional[bool]] = mapped_column(Boolean)
-    swallow_confidence: Mapped[Optional[float]] = mapped_column(Numeric(4, 3))
+    overall_confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    face_match: Mapped[bool | None] = mapped_column(Boolean)
+    face_match_confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    pill_visible: Mapped[bool | None] = mapped_column(Boolean)
+    pill_drugs_detected: Mapped[list[str] | None] = mapped_column(ARRAY(String))
+    pill_confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    swallow_detected: Mapped[bool | None] = mapped_column(Boolean)
+    swallow_confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
 
-    raw_ai_findings: Mapped[Optional[dict]] = mapped_column(JSON)
+    raw_ai_findings: Mapped[dict | None] = mapped_column(JSON)
 
-    received_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=dt.datetime.now)
-    processed_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    received_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=dt.datetime.now
+    )
+    processed_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class SideEffect(Base):
@@ -105,18 +108,20 @@ class SideEffect(Base):
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patients.id"))
 
     raw_text: Mapped[str] = mapped_column(Text)
-    raw_voice_path: Mapped[Optional[str]] = mapped_column(Text)
-    transcription_language: Mapped[Optional[str]] = mapped_column(String(2))
+    raw_voice_path: Mapped[str | None] = mapped_column(Text)
+    transcription_language: Mapped[str | None] = mapped_column(String(2))
 
     severity: Mapped[str] = mapped_column(String(20), default="low")
-    is_expected: Mapped[Optional[bool]] = mapped_column(Boolean)
-    advice_uz: Mapped[Optional[str]] = mapped_column(Text)
-    advice_ru: Mapped[Optional[str]] = mapped_column(Text)
+    is_expected: Mapped[bool | None] = mapped_column(Boolean)
+    advice_uz: Mapped[str | None] = mapped_column(Text)
+    advice_ru: Mapped[str | None] = mapped_column(Text)
     escalated_to_doctor: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    related_drugs: Mapped[Optional[list[str]]] = mapped_column(ARRAY(String))
+    related_drugs: Mapped[list[str] | None] = mapped_column(ARRAY(String))
 
-    reported_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=dt.datetime.now)
+    reported_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=dt.datetime.now
+    )
 
 
 class AdherenceMetrics(Base):
@@ -128,10 +133,12 @@ class AdherenceMetrics(Base):
     total_doses_missed: Mapped[int] = mapped_column(Integer, default=0)
     current_streak: Mapped[int] = mapped_column(Integer, default=0)
     longest_streak: Mapped[int] = mapped_column(Integer, default=0)
-    last_verified_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
-    adherence_rate: Mapped[Optional[float]] = mapped_column(Numeric(4, 3))
-    drop_off_risk_score: Mapped[Optional[float]] = mapped_column(Numeric(4, 3))
-    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=dt.datetime.now)
+    last_verified_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
+    adherence_rate: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    drop_off_risk_score: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    updated_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=dt.datetime.now
+    )
 
 
 # ─── Engine + session factory ───────────────────────────────────────────────
@@ -172,7 +179,7 @@ async def update_streak(session: AsyncSession, patient_id: uuid.UUID, verified: 
         metrics.total_doses_verified += 1
         if metrics.current_streak > metrics.longest_streak:
             metrics.longest_streak = metrics.current_streak
-        metrics.last_verified_at = dt.datetime.now(dt.timezone.utc)
+        metrics.last_verified_at = dt.datetime.now(dt.UTC)
     else:
         metrics.current_streak = 0
         metrics.total_doses_missed += 1

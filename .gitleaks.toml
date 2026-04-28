@@ -1,0 +1,28 @@
+# Davo-AI · gitleaks configuration
+# Базовая конфигурация наследуется от gitleaks default; этот файл — наши overrides.
+
+title = "Davo-AI gitleaks rules"
+
+[extend]
+useDefault = true
+
+# Исключения (false-positives которые мы знаем что безопасны)
+[allowlist]
+description = "Glob excludes для known-good файлов"
+paths = [
+  '''.env\.example$''',
+  '''locales/.*\.json$''',
+  '''data/synthetic/.*\.json$''',
+  '''data/synthetic/.*\.csv$''',
+  '''data/synthetic/.*\.sql$''',
+  '''data/tb_pills/.*\.json$''',
+  '''docs/.*\.md$''',
+]
+
+# Известные dummy-tokens из docs
+regexes = [
+  '''spark-5\.idrock\.uz''',
+  '''@DavoAIBot''',
+  '''@MindTechSupport''',
+  '''temurturayev7822@gmail\.com''',
+]
