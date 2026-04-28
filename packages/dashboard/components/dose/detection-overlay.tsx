@@ -39,7 +39,7 @@ export function DetectionOverlay({
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
+      preserveAspectRatio="xMidYMid slice"
       className="absolute inset-0 w-full h-full pointer-events-none"
       style={{ transform: mirrored ? "scaleX(-1)" : undefined }}
     >

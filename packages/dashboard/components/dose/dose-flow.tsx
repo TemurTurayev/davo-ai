@@ -515,8 +515,8 @@ export function DoseFlow({ locale }: { locale: string }) {
         </motion.div>
       </section>
 
-      {/* CAMERA VIEWPORT — fixed height */}
-      <section className="relative mx-3 rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 shrink-0" style={{ height: "44vh", minHeight: 240, maxHeight: 420 }}>
+      {/* CAMERA VIEWPORT — square 1:1 (matches face overlay coords) */}
+      <section className="relative mx-3 rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 shrink-0 aspect-square">
         {/* Mirrored video for selfie UX (AI receives un-mirrored frame via canvas) */}
         <video
           ref={videoRef}
