@@ -1,0 +1,82 @@
+{
+  "drug": "Isoniazid",
+  "drug_aliases": ["INH", "Nydrazid", "Изониазид"],
+  "who_description": "Tablet 100 mg or 300 mg. Standard appearance: white, round, scored tablet. WHO Essential Medicine for tuberculosis (RHZE regimen, also for latent TB).",
+  "fda_label_color": "White to off-white tablet",
+  "shape": "round, often scored",
+  "dosage": "100 mg, 300 mg",
+  "images": [
+    {
+      "filename": "isoniazid_wikimedia_001.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:%D0%98%D0%B7%D0%BE%D0%BD%D0%B8%D0%B0%D0%B7%D0%B8%D0%B4_%D0%B2_%D1%82%D0%B0%D0%B1%D0%BB%D0%B5%D1%82%D0%BA%D0%B0%D1%85.JPG",
+      "license": "CC BY-SA 4.0",
+      "description": "Russian-language Wikimedia: 'Изониазид в таблетках' — actual photo of isoniazid tablets in original packaging. PRIMARY high-quality reference (4608x2592)."
+    },
+    {
+      "filename": "isoniazid_wikimedia_002_sample.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Isoniazid_sample.jpg",
+      "license": "CC BY-SA 4.0",
+      "description": "Isoniazid sample / chemical substance photo."
+    },
+    {
+      "filename": "isoniazid_wikimedia_003_crystals.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Isoniazid_crystals.jpg",
+      "license": "CC BY-SA 4.0",
+      "description": "Isoniazid recrystallized by water. Microscopic crystal view."
+    },
+    {
+      "filename": "isoniazid_pexels_001_white_pink.jpg",
+      "source_url": "https://www.pexels.com/photo/3683043",
+      "license": "Pexels License (free use)",
+      "description": "Three white pills on pink background. Color/shape match."
+    },
+    {
+      "filename": "isoniazid_pexels_002_white_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/3683111",
+      "license": "Pexels License (free use)",
+      "description": "White pills on yellow background."
+    },
+    {
+      "filename": "isoniazid_pexels_003_white_blue.jpg",
+      "source_url": "https://www.pexels.com/photo/3683036",
+      "license": "Pexels License (free use)",
+      "description": "White round capsules on light blue."
+    },
+    {
+      "filename": "isoniazid_pexels_004_white_close.jpg",
+      "source_url": "https://www.pexels.com/photo/5987970",
+      "license": "Pexels License (free use)",
+      "description": "Close-up of white round pills."
+    },
+    {
+      "filename": "isoniazid_pexels_005_white_blue_textile.jpg",
+      "source_url": "https://www.pexels.com/photo/3683079",
+      "license": "Pexels License (free use)",
+      "description": "Pills on blue textile surface."
+    },
+    {
+      "filename": "isoniazid_pexels_006_white_blue_surf.jpg",
+      "source_url": "https://www.pexels.com/photo/9742859",
+      "license": "Pexels License (free use)",
+      "description": "White tablets on blue surface."
+    },
+    {
+      "filename": "isoniazid_pexels_007_white_spilled.jpg",
+      "source_url": "https://www.pexels.com/photo/5699522",
+      "license": "Pexels License (free use)",
+      "description": "Spilled white pills from container."
+    },
+    {
+      "filename": "isoniazid_pexels_008_white_blister.jpg",
+      "source_url": "https://www.pexels.com/photo/7277984",
+      "license": "Pexels License (free use)",
+      "description": "White & blue pills in blister pack."
+    },
+    {
+      "filename": "isoniazid_pexels_009_white_blue.jpg",
+      "source_url": "https://www.pexels.com/photo/13105348",
+      "license": "Pexels License (free use)",
+      "description": "White and blue pills."
+    }
+  ]
+}

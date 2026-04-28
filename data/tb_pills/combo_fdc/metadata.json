@@ -1,0 +1,143 @@
+{
+  "drug": "Combo FDC (RHZE Fixed-Dose Combination)",
+  "drug_aliases": ["RHZE", "4FDC", "Rifater (RHZ 3FDC)", "Rifinah (RH 2FDC)", "FDC 4-in-1"],
+  "who_description": "Fixed-dose combination tablets containing rifampicin + isoniazid + pyrazinamide + ethambutol (RHZE) or fewer combinations. Typical 4FDC: rifampicin 150 mg + isoniazid 75 mg + pyrazinamide 400 mg + ethambutol 275 mg. Color: typically pink to brown/maroon (rifampicin dominates the pigment), oval or oblong, film-coated, scored.",
+  "fda_label_color": "Pink, brownish-pink, or maroon (rifampicin pigment); some 2FDC are red/orange",
+  "shape": "oblong, oval, or round; film-coated, often scored",
+  "dosage": "Various: RH 150/75, RHZ 150/75/400, RHZE 150/75/400/275",
+  "note": "Photos in this folder are GENERIC pill images approximating the shape/color of FDC tablets. For real WHO-grade FDC photos, contact StopTB Partnership / Global Drug Facility for sample images.",
+  "images": [
+    {
+      "filename": "combo_pexels_001_red_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/7904415",
+      "license": "Pexels License (free use)",
+      "description": "Red and yellow pills mix. Approximates FDC color."
+    },
+    {
+      "filename": "combo_pexels_002_colorful.jpg",
+      "source_url": "https://www.pexels.com/photo/7904438",
+      "license": "Pexels License (free use)",
+      "description": "Colorful capsules and tablets."
+    },
+    {
+      "filename": "combo_pexels_003_multicolored.jpg",
+      "source_url": "https://www.pexels.com/photo/16051961",
+      "license": "Pexels License (free use)",
+      "description": "Multi-colored pharmaceutical pills."
+    },
+    {
+      "filename": "combo_pexels_004_multicolor_blister.jpg",
+      "source_url": "https://www.pexels.com/photo/12672390",
+      "license": "Pexels License (free use)",
+      "description": "Multicolored pills in blisters. Reference for FDC blister packaging."
+    },
+    {
+      "filename": "combo_pexels_005_blister.jpg",
+      "source_url": "https://www.pexels.com/photo/4210607",
+      "license": "Pexels License (free use)",
+      "description": "Pills in blister pack."
+    },
+    {
+      "filename": "combo_pexels_006_blister.jpg",
+      "source_url": "https://www.pexels.com/photo/9742738",
+      "license": "Pexels License (free use)",
+      "description": "Blister pack."
+    },
+    {
+      "filename": "combo_pexels_007_pills_blister.jpg",
+      "source_url": "https://www.pexels.com/photo/9742754",
+      "license": "Pexels License (free use)",
+      "description": "Pink tablets in blister."
+    },
+    {
+      "filename": "combo_pexels_008_pink_pills.jpg",
+      "source_url": "https://www.pexels.com/photo/4210613",
+      "license": "Pexels License (free use)",
+      "description": "Pink tablets — close color match for typical RHZE FDC."
+    },
+    {
+      "filename": "combo_pexels_009_assorted.jpg",
+      "source_url": "https://www.pexels.com/photo/4210615",
+      "license": "Pexels License (free use)",
+      "description": "Assorted medications."
+    },
+    {
+      "filename": "combo_pexels_010_pharmacy.jpg",
+      "source_url": "https://www.pexels.com/photo/5207322",
+      "license": "Pexels License (free use)",
+      "description": "Pharmacy tablets."
+    },
+    {
+      "filename": "combo_pexels_011_pills_pharmacy.jpg",
+      "source_url": "https://www.pexels.com/photo/51929",
+      "license": "Pexels License (free use)",
+      "description": "Pharmacy medications classic photo."
+    },
+    {
+      "filename": "combo_pexels_012_blister_pack.jpg",
+      "source_url": "https://www.pexels.com/photo/12672359",
+      "license": "Pexels License (free use)",
+      "description": "Colored medication pills in blister packs."
+    },
+    {
+      "filename": "combo_pexels_013_pills_bottle.jpg",
+      "source_url": "https://www.pexels.com/photo/15525818",
+      "license": "Pexels License (free use)",
+      "description": "Pills spilling from prescription bottle."
+    },
+    {
+      "filename": "combo_pexels_014_assorted.jpg",
+      "source_url": "https://www.pexels.com/photo/3683081",
+      "license": "Pexels License (free use)",
+      "description": "Assorted pills on red surface."
+    },
+    {
+      "filename": "combo_pexels_015_heart_arrangement.jpg",
+      "source_url": "https://www.pexels.com/photo/12512671",
+      "license": "Pexels License (free use)",
+      "description": "Multicolored pills in heart-shaped arrangement."
+    },
+    {
+      "filename": "combo_pexels_016_pharmacy_bottle.jpg",
+      "source_url": "https://www.pexels.com/photo/29205871",
+      "license": "Pexels License (free use)",
+      "description": "Green pill bottle with white tablets."
+    },
+    {
+      "filename": "combo_pexels_017_blister_herbal.jpg",
+      "source_url": "https://www.pexels.com/photo/7526072",
+      "license": "Pexels License (free use)",
+      "description": "Herbal medicine blister pack."
+    },
+    {
+      "filename": "combo_pexels_018_colorful.jpg",
+      "source_url": "https://www.pexels.com/photo/3873150",
+      "license": "Pexels License (free use)",
+      "description": "Colorful tablets."
+    },
+    {
+      "filename": "combo_pexels_019_capsules.jpg",
+      "source_url": "https://www.pexels.com/photo/3873147",
+      "license": "Pexels License (free use)",
+      "description": "Assorted capsules."
+    },
+    {
+      "filename": "combo_pexels_020_supplements.jpg",
+      "source_url": "https://www.pexels.com/photo/7615573",
+      "license": "Pexels License (free use)",
+      "description": "Supplements scattered."
+    },
+    {
+      "filename": "combo_pexels_021_orange_bg.jpg",
+      "source_url": "https://www.pexels.com/photo/3683086",
+      "license": "Pexels License (free use)",
+      "description": "Pills on orange background."
+    },
+    {
+      "filename": "combo_pexels_022_doctor.jpg",
+      "source_url": "https://www.pexels.com/photo/4989187",
+      "license": "Pexels License (free use)",
+      "description": "Doctor holding medication. Context shot."
+    }
+  ]
+}

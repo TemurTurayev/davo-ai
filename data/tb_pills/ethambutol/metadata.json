@@ -1,0 +1,82 @@
+{
+  "drug": "Ethambutol",
+  "drug_aliases": ["EMB", "Myambutol", "Этамбутол"],
+  "who_description": "Tablet 100 mg or 400 mg. Standard appearance for 400 mg: round, convex, white, scored, film-coated tablet engraved with 'E' and '7'. NOTE: While the strict FDA label says white, in many WHO-procured generics the 400 mg tablets are yellow / yellow-grey. WHO Essential Medicine for tuberculosis (RHZE regimen, first 2 months).",
+  "fda_label_color": "White (US Myambutol). Yellow/yellow-grey common in generics outside US (especially WHO procurement)",
+  "shape": "round, convex, scored, film-coated",
+  "dosage": "100 mg, 400 mg",
+  "images": [
+    {
+      "filename": "ethambutol_wikimedia_001.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ethambutol_substance_photo.jpg",
+      "license": "CC BY-SA 3.0 / GFDL",
+      "description": "Photo of ethambutol crystals/substance (raw material). Color reference."
+    },
+    {
+      "filename": "ethambutol_pexels_001_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/7034124",
+      "license": "Pexels License (free use)",
+      "description": "Yellow tablet. Color match for WHO-generic ethambutol."
+    },
+    {
+      "filename": "ethambutol_pexels_002_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/4132854",
+      "license": "Pexels License (free use)",
+      "description": "Yellow pills on surface."
+    },
+    {
+      "filename": "ethambutol_pexels_003_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/17604768",
+      "license": "Pexels License (free use)",
+      "description": "Yellow pills on blue background."
+    },
+    {
+      "filename": "ethambutol_pexels_004_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/9742775",
+      "license": "Pexels License (free use)",
+      "description": "Yellow tablets close-up."
+    },
+    {
+      "filename": "ethambutol_pexels_005_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/17553953",
+      "license": "Pexels License (free use)",
+      "description": "Yellow tablets."
+    },
+    {
+      "filename": "ethambutol_pexels_006_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/7033658",
+      "license": "Pexels License (free use)",
+      "description": "Yellow capsules/tablets close-up."
+    },
+    {
+      "filename": "ethambutol_pexels_007_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/9742741",
+      "license": "Pexels License (free use)",
+      "description": "Yellow capsules in blister."
+    },
+    {
+      "filename": "ethambutol_pexels_008_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/35970039",
+      "license": "Pexels License (free use)",
+      "description": "Yellow tablets."
+    },
+    {
+      "filename": "ethambutol_pexels_009_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/9742749",
+      "license": "Pexels License (free use)",
+      "description": "Yellow capsules."
+    },
+    {
+      "filename": "ethambutol_pexels_010_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/30385882",
+      "license": "Pexels License (free use)",
+      "description": "Yellow tablets."
+    },
+    {
+      "filename": "ethambutol_pexels_011_yellow_blue_bg.jpg",
+      "source_url": "https://www.pexels.com/photo/17604768",
+      "license": "Pexels License (free use)",
+      "description": "Yellow pills on blue background (additional)."
+    }
+  ]
+}

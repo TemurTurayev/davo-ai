@@ -1,0 +1,60 @@
+{
+  "start.greeting": "Assalomu alaykum, {name}! 👋\n\nMen — Davo-AI, sil kasalligini davolashda yordamchingizman.\n\nMen sizga:\n• Har kuni dori vaqtida eslatib turaman\n• Dori qabul qilganligingizni tasdiqlayman (video)\n• Yon ta'sirlar haqida maslahat beraman\n• Shifokoringiz bilan aloqa o'rnataman",
+
+  "start.choose_language": "Tilni tanlang / Выберите язык:",
+  "start.lang_uz": "🇺🇿 O'zbekcha",
+  "start.lang_ru": "🇷🇺 Русский",
+
+  "register.welcome": "Avval ro'yxatdan o'taylik. Bu 2 daqiqa vaqt oladi.",
+  "register.ask_name": "Iltimos, ism va familiyangizni yozing:",
+  "register.ask_birth_year": "Tug'ilgan yilingizni yozing (masalan: 1985):",
+  "register.invalid_year": "Yil noto'g'ri. Iltimos, 1900 dan 2025 gacha bo'lgan yilni kiriting.",
+  "register.ask_phone": "Telefon raqamingizni ulashing yoki yozing:",
+  "register.ask_face": "Endi yuzingizning fotosini yuboring 📸\n\nBu sizni keyingi videolarda tanish uchun kerak. Yuzingiz aniq ko'rinishi kerak, ko'zoynagisiz, yaxshi yorug'likda.",
+  "register.face_received": "Rahmat! Yuzingizni saqladim. ✓",
+  "register.ask_treatment_start": "Davolanish qachon boshlangan? (masalan: 2026-04-15)",
+  "register.ask_drugs": "Qaysi dorilarni qabul qilasiz? Tanlang:",
+  "register.drug_rifampicin": "Rifampitsin (qizil kapsula)",
+  "register.drug_isoniazid": "Izoniazid (oq tabletka)",
+  "register.drug_pyrazinamide": "Pirazinamid",
+  "register.drug_ethambutol": "Etambutol (sariq)",
+  "register.drug_combo": "Kombinatsiya (RHZE)",
+  "register.drug_done": "✅ Tayyor",
+  "register.ask_reminder_time": "Dori qabul qilish vaqtingizni kiriting (masalan: 08:00):",
+  "register.invalid_time": "Vaqt noto'g'ri formatda. Iltimos, HH:MM ko'rinishida yozing (masalan: 08:00).",
+  "register.complete": "🎉 Ro'yxatdan o'tish yakunlandi!\n\nHar kuni soat {time} da sizga eslatma yuboraman. Birinchi videoni hoziroq yuborishingiz mumkin.",
+
+  "reminder.daily": "🔔 Salom, {name}!\n\nDori qabul qilish vaqti keldi. Iltimos, 15 soniyalik video yuboring:\n1. Dorini ko'rsating\n2. Qabul qiling\n3. Bo'sh og'zingizni ko'rsating",
+  "reminder.missed": "⚠️ Bugun dori qabul qilinmadi. Hammasi joyidami? Yon ta'sir bo'lyaptimi?",
+  "reminder.retry": "Eslatma: hali video yubormadingiz. Iltimos, dori qabul qiling.",
+
+  "video.received": "Video qabul qilindi, tahlil qilyapman... ⏳",
+  "video.verified": "✅ Ajoyib! Dori qabul qilingani tasdiqlandi.\n\nIshonchlilik: {confidence}%\nDavolanishni davom ettiring! Streak: {streak} kun 🔥",
+  "video.unverified": "⚠️ Videoda dori qabul qilingani aniq ko'rinmadi. Iltimos, qayta yuboring:\n• Yorug'lik yaxshi bo'lsin\n• Yuzingiz aniq ko'rinsin\n• Dorini olishni va yutishni ko'rsating",
+  "video.under_review": "ℹ️ Videongiz shifokorga ko'rib chiqish uchun yuborildi. Tez orada javob beraman.",
+  "video.too_short": "Video juda qisqa ({duration}s). Iltimos, kamida 10 soniyalik video yuboring.",
+  "video.too_long": "Video juda uzun. Iltimos, 30 soniyadan kam video yuboring.",
+
+  "chat.welcome": "Yon ta'sir yoki savolingizni yozing/aytib bering. Men sizga maslahat beraman yoki shifokorga yetkazamen.",
+  "chat.thinking": "O'ylayapman... 🤔",
+  "chat.urgent": "⚠️ DIQQAT! Bu jiddiy ta'sir bo'lishi mumkin. Shifokorga darhol murojaat qiling: {phone}",
+  "chat.escalated": "📨 Savolingiz shifokorga yuborildi. U 1-2 soat ichida javob beradi.",
+
+  "btn.start_treatment": "✅ Davolanishni boshlash",
+  "btn.send_video": "🎥 Video yuborish",
+  "btn.report_side_effect": "💊 Yon ta'sir haqida xabar berish",
+  "btn.contact_doctor": "👨‍⚕️ Shifokor bilan bog'lanish",
+  "btn.my_progress": "📊 Mening progressim",
+  "btn.help": "❓ Yordam",
+  "btn.cancel": "Bekor qilish",
+  "btn.skip": "O'tkazib yuborish",
+  "btn.yes": "Ha",
+  "btn.no": "Yo'q",
+
+  "progress.summary": "📊 Sizning progressingiz:\n\n• Davolanish kunlari: {days}\n• Tasdiqlangan dozalar: {confirmed}\n• Adhereens: {adherence}%\n• Joriy streak: {streak} kun 🔥\n• Joriy dori: {drugs}",
+
+  "help.text": "📚 Yordam\n\n/start — qaytadan boshlash\n/progress — progressimni ko'rish\n/contact — shifokor bilan bog'lanish\n/lang — tilni o'zgartirish\n\nMuammo bo'lsa: @MindTechSupport",
+
+  "error.generic": "Kechirasiz, xato yuz berdi. Qaytadan urinib ko'ring.",
+  "error.network": "Internet bilan bog'lanish yo'q. Bir oz keyinroq urinib ko'ring."
+}

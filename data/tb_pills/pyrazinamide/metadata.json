@@ -1,0 +1,82 @@
+{
+  "drug": "Pyrazinamide",
+  "drug_aliases": ["PZA", "Zinamide", "Пиразинамид"],
+  "who_description": "Tablet 500 mg. Standard appearance: white, round or oval (oblong) scored tablet. Larger than isoniazid because of higher dose. WHO Essential Medicine for tuberculosis (RHZE regimen — typically used for first 2 months).",
+  "fda_label_color": "White, crystalline powder; tablets are white",
+  "shape": "round or oval, may be scored (e.g. 'Vp 012' imprint)",
+  "dosage": "500 mg",
+  "images": [
+    {
+      "filename": "pyrazinamide_pexels_001_white_scatter.jpg",
+      "source_url": "https://www.pexels.com/photo/3683112",
+      "license": "Pexels License (free use)",
+      "description": "Pills scattered on yellow backdrop. White tablets."
+    },
+    {
+      "filename": "pyrazinamide_pexels_002_white_round.jpg",
+      "source_url": "https://www.pexels.com/photo/5742325",
+      "license": "Pexels License (free use)",
+      "description": "Blue and white pills. White round tablets visible."
+    },
+    {
+      "filename": "pyrazinamide_pexels_003_pink_pills.jpg",
+      "source_url": "https://www.pexels.com/photo/4058264",
+      "license": "Pexels License (free use)",
+      "description": "Pink pills on white surface (note: PZA is typically white, but some manufacturers vary)."
+    },
+    {
+      "filename": "pyrazinamide_pexels_004_oval.jpg",
+      "source_url": "https://www.pexels.com/photo/3683108",
+      "license": "Pexels License (free use)",
+      "description": "White oval capsules on yellow. Good shape match for PZA."
+    },
+    {
+      "filename": "pyrazinamide_pexels_005_oval.jpg",
+      "source_url": "https://www.pexels.com/photo/4210606",
+      "license": "Pexels License (free use)",
+      "description": "White ellipse pills on yellow background."
+    },
+    {
+      "filename": "pyrazinamide_pexels_006_oval.jpg",
+      "source_url": "https://www.pexels.com/photo/4210616",
+      "license": "Pexels License (free use)",
+      "description": "White ellipse-shaped pills diagonally arranged."
+    },
+    {
+      "filename": "pyrazinamide_pexels_007_oblong.jpg",
+      "source_url": "https://www.pexels.com/photo/9742855",
+      "license": "Pexels License (free use)",
+      "description": "Two white oblong tablets on pink background."
+    },
+    {
+      "filename": "pyrazinamide_pexels_008_oblong.jpg",
+      "source_url": "https://www.pexels.com/photo/9742881",
+      "license": "Pexels License (free use)",
+      "description": "Three white oblong pills on blue background."
+    },
+    {
+      "filename": "pyrazinamide_pexels_009_white_lg.jpg",
+      "source_url": "https://www.pexels.com/photo/3683068",
+      "license": "Pexels License (free use)",
+      "description": "Varying sizes of white tablets on green surface."
+    },
+    {
+      "filename": "pyrazinamide_pexels_010_white.jpg",
+      "source_url": "https://www.pexels.com/photo/7083682",
+      "license": "Pexels License (free use)",
+      "description": "Three white tablets on black surface."
+    },
+    {
+      "filename": "pyrazinamide_pexels_011_white_blister.jpg",
+      "source_url": "https://www.pexels.com/photo/9742768",
+      "license": "Pexels License (free use)",
+      "description": "White pills on blister pack."
+    },
+    {
+      "filename": "pyrazinamide_pexels_012_assorted.jpg",
+      "source_url": "https://www.pexels.com/photo/7615407",
+      "license": "Pexels License (free use)",
+      "description": "Capsules on white marble background. Mixed colors."
+    }
+  ]
+}

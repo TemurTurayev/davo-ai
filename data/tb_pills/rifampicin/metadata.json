@@ -1,0 +1,91 @@
+{
+  "drug": "Rifampicin",
+  "drug_aliases": ["Rifampin", "Rifadin", "Rimactane", "Рифампицин"],
+  "who_description": "Capsule 150 mg or 300 mg. Standard appearance: red-orange to maroon/brown opaque gelatin capsule. WHO Essential Medicine for tuberculosis (RHZE regimen).",
+  "fda_label_color": "Red-brown crystalline powder; capsules are typically red-orange/maroon",
+  "shape": "capsule",
+  "dosage": "150 mg, 300 mg",
+  "images": [
+    {
+      "filename": "rifampicin_wikimedia_001_powder.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Rifampicin_powder.JPG",
+      "license": "CC BY-SA 4.0",
+      "author": "Thepcmaniac",
+      "description": "Photo of red-brown rifampicin powder (raw substance, not finished pill). Useful as color reference."
+    },
+    {
+      "filename": "rifampicin_wikimedia_002_kothara.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Kothara_Hospital_pharmaceuticals_TLMI_cr_DC_38d17c8f-1ed8-4bca-bdf5-5cc19b87283f.jpg",
+      "license": "CC BY-SA 4.0",
+      "author": "The Leprosy Mission Australia",
+      "description": "Pharmaceuticals at Kothara Hospital, India. Contains rifampicin and dapsone for leprosy/TB treatment."
+    },
+    {
+      "filename": "rifampicin_wikimedia_003_mdt_blister.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Multidrug_therapy_(MDT)_for_the_treatment_of_leprosy.jpg",
+      "license": "Public Domain",
+      "author": "WHO/MDT donation",
+      "description": "Blister pack with rifampicin (red capsule), clofazimine, and dapsone for MDT therapy. Excellent reference for the red rifampicin capsule shape."
+    },
+    {
+      "filename": "rifampicin_pexels_001_red.jpg",
+      "source_url": "https://www.pexels.com/photo/9742911",
+      "license": "Pexels License (free use)",
+      "description": "Red tablets with white pill on surface. Color match for rifampicin."
+    },
+    {
+      "filename": "rifampicin_pexels_002_red_blister.jpg",
+      "source_url": "https://www.pexels.com/photo/7033945",
+      "license": "Pexels License (free use)",
+      "description": "Macro shot of red capsules in blister pack."
+    },
+    {
+      "filename": "rifampicin_pexels_003_red_scattered.jpg",
+      "source_url": "https://www.pexels.com/photo/7904404",
+      "license": "Pexels License (free use)",
+      "description": "Scattered red capsules on white surface."
+    },
+    {
+      "filename": "rifampicin_pexels_004_red_yellow_bg.jpg",
+      "source_url": "https://www.pexels.com/photo/9743101",
+      "license": "Pexels License (free use)",
+      "description": "Single red capsule on yellow background."
+    },
+    {
+      "filename": "rifampicin_pexels_005_red_yellow.jpg",
+      "source_url": "https://www.pexels.com/photo/9742810",
+      "license": "Pexels License (free use)",
+      "description": "Red capsules on bright yellow surface."
+    },
+    {
+      "filename": "rifampicin_pexels_006_red_pink_bg.jpg",
+      "source_url": "https://www.pexels.com/photo/9742904",
+      "license": "Pexels License (free use)",
+      "description": "Red and yellow capsules on pink background."
+    },
+    {
+      "filename": "rifampicin_pexels_007_red_blue.jpg",
+      "source_url": "https://www.pexels.com/photo/7904444",
+      "license": "Pexels License (free use)",
+      "description": "Red and blue capsules on white background."
+    },
+    {
+      "filename": "rifampicin_pexels_008_hand_capsule.jpg",
+      "source_url": "https://www.pexels.com/photo/15038478",
+      "license": "Pexels License (free use)",
+      "description": "Hand holding red and yellow capsule."
+    },
+    {
+      "filename": "rifampicin_pexels_009_red_white.jpg",
+      "source_url": "https://www.pexels.com/photo/13534594",
+      "license": "Pexels License (free use)",
+      "description": "Capsules on dark background, mix of red/white."
+    },
+    {
+      "filename": "rifampicin_pexels_010_capsules.jpg",
+      "source_url": "https://www.pexels.com/photo/31406904",
+      "license": "Pexels License (free use)",
+      "description": "Pink/white capsules close-up."
+    }
+  ]
+}

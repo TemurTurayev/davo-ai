@@ -1,0 +1,22 @@
+# Davo-AI · TB pills YOLO dataset config
+# Используется для fine-tune: yolo train data=dataset.yaml ...
+
+# Путь относительно /opt/davoai/repo (на DGX Spark)
+path: ./data/tb_pills
+train: train/images
+val: val/images
+test: test/images
+
+# Классы (соответствуют CLASS_NAMES в yolo_server.py)
+names:
+  0: rifampicin
+  1: isoniazid
+  2: pyrazinamide
+  3: ethambutol
+  4: combo_fdc
+
+# Notes:
+# - Перед запуском train: разметить 71 фото в Roboflow или CVAT
+# - Применить augmentations: rotation, lighting, blur, partial occlusion
+# - Ожидаемый mAP@0.5: 0.75-0.95 после 100 epochs
+# - Для production нужно ~50 фото каждого препарата (Темур через TashPMI)
