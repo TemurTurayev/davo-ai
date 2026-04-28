@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 /*
- * Nafas Design System
+ * TB Control Design System
  * Brand: AI-assisted TB treatment monitoring
  * Tone: warm professional medical, no stigma, empowering peer
  */
 
 @theme {
   /* ── Brand palette ─────────────────────────────────── */
-  --color-brand: #0EA5A4;          /* Nafas Teal — primary */
+  --color-brand: #0EA5A4;          /* TB Control Teal — primary */
   --color-brand-dark: #0F766E;     /* Deep teal — hover */
   --color-brand-soft: #CCFBF1;     /* Mint tint — bg accents */
   --color-accent: #F59E5B;         /* Apricot — Uzbek warmth */

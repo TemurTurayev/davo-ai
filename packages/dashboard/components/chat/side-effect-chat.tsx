@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useNafasStore } from "@/lib/store";
+import { useTBControlStore } from "@/lib/store";
 import { getWebApp } from "@/lib/telegram";
 
 type Step = "feeling" | "category" | "describe" | "advice" | "saved";
@@ -69,7 +69,7 @@ export function SideEffectChat({ locale }: { locale: string }) {
   const [advice, setAdvice] = useState<AdviceResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const { recordSideEffect } = useNafasStore();
+  const { recordSideEffect } = useTBControlStore();
 
   const haptic = (s: "light" | "medium" = "light") =>
     getWebApp()?.HapticFeedback.impactOccurred(s);

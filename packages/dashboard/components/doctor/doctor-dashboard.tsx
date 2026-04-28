@@ -21,7 +21,7 @@ import {
   Search,
   Filter,
 } from "lucide-react";
-import { NafasLogo } from "@/components/brand/nafas-logo";
+import { TBControlLogo } from "@/components/brand/tb-control-logo";
 import { cn } from "@/lib/utils";
 
 interface DemoPatient {
@@ -134,7 +134,7 @@ export function DoctorDashboard({ locale: _locale }: { locale: string }) {
       {/* Top bar */}
       <header className="bg-white border-b border-[var(--color-slate-200)] sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <NafasLogo size={32} showWordmark />
+          <TBControlLogo size={32} showWordmark />
           <div className="flex items-center gap-3 text-sm text-[var(--color-slate-500)]">
             <span>Dr. Темур Тураев</span>
             <span className="w-9 h-9 rounded-full bg-[var(--color-brand)] text-white flex items-center justify-center font-bold">

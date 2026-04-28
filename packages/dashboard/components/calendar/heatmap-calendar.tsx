@@ -19,7 +19,7 @@
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
-import { useNafasStore } from "@/lib/store";
+import { useTBControlStore } from "@/lib/store";
 import { treatmentDay, regimenLengthDays } from "@/lib/utils";
 import { getWebApp } from "@/lib/telegram";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,7 @@ type DayStatus = "taken" | "missed" | "review" | "today" | "future" | "before-tr
 
 export function HeatmapCalendar({ locale }: { locale: string }) {
   const t = useTranslations("calendar");
-  const { profile, doses } = useNafasStore();
+  const { profile, doses } = useTBControlStore();
   const [monthOffset, setMonthOffset] = useState(0);
 
   const startedAt = profile.treatmentStartedAt

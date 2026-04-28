@@ -1,21 +1,21 @@
 /**
- * Nafas logo — minimal SVG mark
+ * TB Control logo — minimal SVG mark
  * Style: stylized droplet/lung formed by two arcs (inhale + exhale) + a central pulse dot
  */
 
-interface NafasLogoProps {
+interface TBControlLogoProps {
   size?: number;
   className?: string;
   showWordmark?: boolean;
   variant?: "default" | "white" | "ink";
 }
 
-export function NafasLogo({
+export function TBControlLogo({
   size = 32,
   className,
   showWordmark = false,
   variant = "default",
-}: NafasLogoProps) {
+}: TBControlLogoProps) {
   const teal = variant === "white" ? "#ffffff" : "#0EA5A4";
   const pulse = variant === "white" ? "#F59E5B" : "#F59E5B";
   const ink = variant === "white" ? "#ffffff" : variant === "ink" ? "#0F172A" : "#0F172A";
@@ -28,7 +28,7 @@ export function NafasLogo({
         viewBox="0 0 32 32"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        aria-label="Nafas"
+        aria-label="TB Control"
         role="img"
       >
         {/* outer droplet — formed by two arcs (inhale + exhale) */}
@@ -44,12 +44,12 @@ export function NafasLogo({
           style={{
             fontFamily: "var(--font-manrope), system-ui, sans-serif",
             fontWeight: 800,
-            fontSize: size * 0.85,
+            fontSize: size * 0.7,
             color: ink,
             letterSpacing: "-0.02em",
           }}
         >
-          nafas
+          TB Control
         </span>
       )}
     </span>

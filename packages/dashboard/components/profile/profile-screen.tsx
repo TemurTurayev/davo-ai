@@ -15,15 +15,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { useNafasStore } from "@/lib/store";
+import { useTBControlStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { NafasLogo } from "@/components/brand/nafas-logo";
+import { TBControlLogo } from "@/components/brand/tb-control-logo";
 import { treatmentDay, regimenLengthDays, formatDate } from "@/lib/utils";
 import { localeNames } from "@/i18n/config";
 
 export function ProfileScreen({ locale }: { locale: string }) {
   const router = useRouter();
-  const { profile, doses, reset } = useNafasStore();
+  const { profile, doses, reset } = useTBControlStore();
 
   const dayN = profile.treatmentStartedAt
     ? treatmentDay(new Date(profile.treatmentStartedAt))
@@ -134,9 +134,9 @@ export function ProfileScreen({ locale }: { locale: string }) {
       </section>
 
       <footer className="text-center mt-8 text-xs text-[var(--color-slate-400)]">
-        <NafasLogo size={20} className="justify-center mb-2" />
+        <TBControlLogo size={20} className="justify-center mb-2" />
         <p>
-          Nafas v0.1 · MindTech ·{" "}
+          TB Control v0.1 · MindTech ·{" "}
           {t("Toshkentdan sevgi bilan", "Сделано в Ташкенте", "Made in Tashkent")}
         </p>
       </footer>

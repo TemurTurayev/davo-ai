@@ -16,7 +16,7 @@ import { useTranslations } from "next-intl";
 import { Camera, Square, RefreshCw, Send, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useNafasStore } from "@/lib/store";
+import { useTBControlStore } from "@/lib/store";
 import { getWebApp } from "@/lib/telegram";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +45,7 @@ export function RecordScreen({ locale }: { locale: string }) {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const { recordDose } = useNafasStore();
+  const { recordDose } = useTBControlStore();
 
   // Request camera on mount
   useEffect(() => {

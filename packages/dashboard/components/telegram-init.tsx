@@ -39,7 +39,7 @@ export function TelegramInit() {
         router.replace(`/${userLang}`);
       }
     } catch (e) {
-      console.error("[Nafas] Telegram WebApp init failed:", e);
+      console.error("[TB Control] Telegram WebApp init failed:", e);
     }
   }, [pathname, router]);
 

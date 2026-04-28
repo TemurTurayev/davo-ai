@@ -1,5 +1,5 @@
 /**
- * Nafas i18n configuration
+ * TB Control i18n configuration
  * 3 локали: узбекский (primary), русский, английский
  */
 

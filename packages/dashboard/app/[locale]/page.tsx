@@ -1,6 +1,6 @@
 /**
  * Landing page — visible when user opens the app outside of Telegram
- * Inside Telegram WebApp: Telegram → /start → button "Open Nafas" → here.
+ * Inside Telegram WebApp: Telegram → /start → button "Open TB Control" → here.
  *
  * Layout: hero + 4 features + trust badges + 2 CTAs (Patient/Doctor)
  * Mobile-first (Telegram Mini App ~360px width)
@@ -12,7 +12,7 @@ import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
-import { NafasLogo } from "@/components/brand/nafas-logo";
+import { TBControlLogo } from "@/components/brand/tb-control-logo";
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 
@@ -33,14 +33,14 @@ export default async function LandingPage({ params }: PageProps) {
     <main className="min-h-screen flex flex-col">
       {/* Top bar */}
       <header className="px-5 pt-6 pb-3 flex items-center justify-between">
-        <NafasLogo size={28} showWordmark />
+        <TBControlLogo size={28} showWordmark />
         <LanguageSwitcher current={locale} />
       </header>
 
       {/* Hero */}
       <section className="px-5 pt-6 pb-10">
         <div className="flex justify-center mb-6">
-          <NafasLogo size={72} />
+          <TBControlLogo size={72} />
         </div>
         <h1 className="text-center font-heading mb-3" style={{ fontSize: 28, fontWeight: 800 }}>
           {tLanding("hero_title")}

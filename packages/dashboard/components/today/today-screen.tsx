@@ -12,17 +12,17 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Camera, Check, Heart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNafasStore } from "@/lib/store";
+import { useTBControlStore } from "@/lib/store";
 import { getWebApp } from "@/lib/telegram";
 import { treatmentDay, regimenLengthDays } from "@/lib/utils";
-import { NafasLogo } from "@/components/brand/nafas-logo";
+import { TBControlLogo } from "@/components/brand/tb-control-logo";
 
 export function TodayScreen({ locale }: { locale: string }) {
   const router = useRouter();
   const t = useTranslations("daily");
   const [today] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const { profile, doses, isOnboarded } = useNafasStore();
+  const { profile, doses, isOnboarded } = useTBControlStore();
 
   // Redirect to onboarding if not yet
   useEffect(() => {
@@ -62,7 +62,7 @@ export function TodayScreen({ locale }: { locale: string }) {
             {t("day_of", { current: dayN, total })}
           </p>
         </div>
-        <NafasLogo size={32} />
+        <TBControlLogo size={32} />
       </header>
 
       {/* Hero card — today's status */}

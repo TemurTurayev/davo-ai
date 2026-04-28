@@ -1,5 +1,5 @@
 /**
- * Nafas client store (Zustand)
+ * TB Control client store (Zustand)
  * Persists onboarding + adherence state to localStorage
  */
 
@@ -25,7 +25,7 @@ export interface SideEffectRecord {
   escalated: boolean;
 }
 
-interface NafasState {
+interface TBControlState {
   // Profile
   profile: {
     fullName: string;
@@ -54,7 +54,7 @@ interface NafasState {
   reset(): void;
 }
 
-export const useNafasStore = create<NafasState>()(
+export const useTBControlStore = create<TBControlState>()(
   persist(
     (set) => ({
       profile: {
@@ -113,7 +113,7 @@ export const useNafasStore = create<NafasState>()(
         }),
     }),
     {
-      name: "nafas-state",
+      name: "tb-control-state",
       storage: createJSONStorage(() => {
         if (typeof window === "undefined") {
           // SSR-safe noop

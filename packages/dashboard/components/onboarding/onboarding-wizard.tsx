@@ -13,10 +13,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Pill, Activity, HelpCircle, Camera, Bell, ChevronLeft, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useNafasStore, type Regimen } from "@/lib/store";
+import { useTBControlStore, type Regimen } from "@/lib/store";
 import { getWebApp } from "@/lib/telegram";
 import { cn } from "@/lib/utils";
-import { NafasLogo } from "@/components/brand/nafas-logo";
+import { TBControlLogo } from "@/components/brand/tb-control-logo";
 
 interface OnboardingWizardProps {
   locale: string;
@@ -36,7 +36,7 @@ export function OnboardingWizard({ locale }: OnboardingWizardProps) {
   const [time, setTime] = useState("08:00");
   const [perms, setPerms] = useState({ camera: false, notifications: false });
 
-  const store = useNafasStore();
+  const store = useTBControlStore();
 
   const haptic = (style: "light" | "medium" = "light") => {
     getWebApp()?.HapticFeedback.impactOccurred(style);
@@ -167,7 +167,7 @@ function StepName({
 }) {
   return (
     <div>
-      <NafasLogo size={56} className="mb-6" />
+      <TBControlLogo size={56} className="mb-6" />
       <h1 className="text-2xl font-heading font-extrabold mb-3">{title}</h1>
       <input
         type="text"

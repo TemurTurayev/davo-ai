@@ -30,12 +30,12 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Nafas — TB treatment companion",
-    template: "%s · Nafas",
+    default: "TB Control — TB treatment companion",
+    template: "%s · TB Control",
   },
   description:
     "AI-assisted TB treatment monitoring. Daily reminders, dose verification, side-effect guidance.",
-  applicationName: "Nafas",
+  applicationName: "TB Control",
   authors: [{ name: "MindTech" }],
   keywords: ["TB", "tuberculosis", "treatment", "adherence", "DOT", "VOT", "Uzbekistan", "AI"],
   manifest: "/manifest.json",
