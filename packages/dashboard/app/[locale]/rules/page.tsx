@@ -1,16 +1,15 @@
 import { setRequestLocale } from "next-intl/server";
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
-import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { RulesAgreementClient } from "@/components/rules/rules-agreement-client";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-export default async function OnboardingPage({ params }: PageProps) {
+export default async function RulesPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
   setRequestLocale(locale);
-
-  return <OnboardingWizard locale={locale} />;
+  return <RulesAgreementClient locale={locale} />;
 }

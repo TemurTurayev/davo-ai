@@ -20,7 +20,8 @@ import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useTBControlStore } from "@/lib/store";
-import { treatmentDay, regimenLengthDays } from "@/lib/utils";
+import { treatmentDay } from "@/lib/utils";
+import { PROTOCOLS } from "@/lib/protocols";
 import { getWebApp } from "@/lib/telegram";
 import { cn } from "@/lib/utils";
 
@@ -28,13 +29,15 @@ type DayStatus = "taken" | "missed" | "review" | "today" | "future" | "before-tr
 
 export function HeatmapCalendar({ locale }: { locale: string }) {
   const t = useTranslations("calendar");
-  const { profile, doses } = useTBControlStore();
+  const { prescription, doses } = useTBControlStore();
   const [monthOffset, setMonthOffset] = useState(0);
 
-  const startedAt = profile.treatmentStartedAt
-    ? new Date(profile.treatmentStartedAt)
+  const startedAt = prescription
+    ? new Date(prescription.startDate)
     : new Date();
-  const totalDays = regimenLengthDays(profile.regimen);
+  const totalDays = prescription && prescription.protocol !== "custom"
+    ? PROTOCOLS[prescription.protocol].durationDays
+    : 180;
   const treatmentEnd = new Date(startedAt);
   treatmentEnd.setDate(treatmentEnd.getDate() + totalDays);
 
@@ -63,14 +66,14 @@ export function HeatmapCalendar({ locale }: { locale: string }) {
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(year, month, d);
       const iso = date.toISOString().slice(0, 10);
-      const dose = doses.find((dd) => dd.date === iso);
+      const dose = doses.find((dd) => dd.scheduledAt.slice(0, 10) === iso);
 
       let status: DayStatus = "future";
       if (date < startedAt) status = "before-treatment";
       else if (iso === todayIso) status = "today";
       else if (date > today) status = "future";
-      else if (dose?.status === "taken") status = "taken";
-      else if (dose?.status === "review") status = "review";
+      else if (dose?.status === "completed") status = "taken";
+      else if (dose?.status === "completed_flag") status = "review";
       else status = "missed";
 
       cells.push({ date, iso, status });

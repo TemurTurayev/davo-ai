@@ -21,6 +21,8 @@ import {
   Search,
   Filter,
 } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { TBControlLogo } from "@/components/brand/tb-control-logo";
 import { cn } from "@/lib/utils";
 
@@ -135,12 +137,16 @@ export function DoctorDashboard({ locale: _locale }: { locale: string }) {
       <header className="bg-white border-b border-[var(--color-slate-200)] sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <TBControlLogo size={32} showWordmark />
-          <div className="flex items-center gap-3 text-sm text-[var(--color-slate-500)]">
-            <span>Dr. Темур Тураев</span>
-            <span className="w-9 h-9 rounded-full bg-[var(--color-brand)] text-white flex items-center justify-center font-bold">
-              T
-            </span>
-          </div>
+          <nav className="flex items-center gap-2">
+            <DoctorNavLink href="prescriptions">Tayinlash · Назначения</DoctorNavLink>
+            <DoctorNavLink href="review">Tekshirish · Проверка</DoctorNavLink>
+            <div className="ml-3 flex items-center gap-2 text-sm text-[var(--color-slate-500)]">
+              <span className="hidden md:inline">Dr. Темур Тураев</span>
+              <span className="w-9 h-9 rounded-full bg-[var(--color-brand)] text-white flex items-center justify-center font-bold">
+                T
+              </span>
+            </div>
+          </nav>
         </div>
       </header>
 
@@ -326,5 +332,18 @@ function RiskPill({ score }: { score: number }) {
     <span className={cn("w-20 text-center py-1 rounded-full text-xs font-bold tabular", bg)}>
       {label} · {Math.round(score * 100)}%
     </span>
+  );
+}
+
+function DoctorNavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const params = useParams();
+  const locale = (params?.locale as string) || "uz";
+  return (
+    <Link
+      href={`/${locale}/doctor/${href}`}
+      className="px-3 py-1.5 rounded-full text-sm font-medium text-[var(--color-slate-600)] hover:bg-[var(--color-mist)] transition-colors"
+    >
+      {children}
+    </Link>
   );
 }

@@ -9,7 +9,8 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, Flame, Sparkles, Medal, Star, ShieldCheck, HeartHandshake } from "lucide-react";
 import { useTBControlStore } from "@/lib/store";
-import { treatmentDay, regimenLengthDays } from "@/lib/utils";
+import { treatmentDay } from "@/lib/utils";
+import { PROTOCOLS } from "@/lib/protocols";
 import { GlassCard } from "@/components/ui/glass-card";
 import { cn } from "@/lib/utils";
 
@@ -107,16 +108,18 @@ const MILESTONES: Milestone[] = [
 
 export function AchievementsScreen({ locale }: { locale: string }) {
   const lang = (locale === "uz" || locale === "ru" ? locale : "en") as "uz" | "ru" | "en";
-  const { profile } = useTBControlStore();
+  const { prescription } = useTBControlStore();
 
   const dayN = useMemo(() => {
-    const startedAt = profile.treatmentStartedAt
-      ? new Date(profile.treatmentStartedAt)
+    const startedAt = prescription
+      ? new Date(prescription.startDate)
       : new Date();
     return treatmentDay(startedAt);
-  }, [profile.treatmentStartedAt]);
+  }, [prescription]);
 
-  const totalDays = regimenLengthDays(profile.regimen);
+  const totalDays = prescription && prescription.protocol !== "custom"
+    ? PROTOCOLS[prescription.protocol].durationDays
+    : 180;
 
   const earned = MILESTONES.filter((m) => dayN >= m.threshold);
   const next = MILESTONES.find((m) => dayN < m.threshold);

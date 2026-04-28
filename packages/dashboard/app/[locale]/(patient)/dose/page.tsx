@@ -1,15 +1,15 @@
 import { setRequestLocale } from "next-intl/server";
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
-import { SideEffectChat } from "@/components/chat/side-effect-chat";
+import { DoseFlow } from "@/components/dose/dose-flow";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
-export default async function ChatPage({ params }: PageProps) {
+export default async function DosePage({ params }: PageProps) {
   const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
   setRequestLocale(locale);
-  return <SideEffectChat locale={locale} />;
+  return <DoseFlow locale={locale} />;
 }
