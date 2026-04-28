@@ -200,7 +200,7 @@ def synthesize_video(output: Path, drug: str = "rifampicin", duration_s: int = D
         # Fallback: write MP4 через OpenCV (без аудио)
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(str(output), fourcc, FPS, (FRAME_W, FRAME_H))
-        for scene_idx, scene_fn in enumerate(SCENES):
+        for _scene_idx, scene_fn in enumerate(SCENES):
             for fi in range(frames_per_scene):
                 frame = scene_fn(fi, frames_per_scene, drug_color)
                 writer.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
