@@ -59,50 +59,40 @@ function jitter(base: number, amplitude: number, t: number): number {
 // Numbers approximate; for real Mediapipe FaceMesh use actual indices.
 // ────────────────────────────────────────────────────────────────────────────
 
+// Reduced from 120 to 32 key points — half the SVG nodes, no visible quality
+// loss at viewport size. Real face_id step uses face-api.js 68pt instead.
 const FACE_MESH_POINTS = (() => {
   const pts: { x: number; y: number; idx: number }[] = [];
-  // Outline (jaw + forehead)
-  for (let i = 0; i < 36; i++) {
-    const angle = (i / 36) * Math.PI * 2;
-    const rx = 0.18 + Math.sin(i / 6) * 0.01;
-    const ry = 0.24;
-    pts.push({
-      x: 0.5 + Math.cos(angle) * rx,
-      y: 0.5 + Math.sin(angle) * ry,
-      idx: i,
-    });
-  }
-  // Eyes (left + right)
-  const eyeCenters = [
-    { cx: 0.42, cy: 0.46 },
-    { cx: 0.58, cy: 0.46 },
-  ];
-  eyeCenters.forEach((c, ci) => {
-    for (let i = 0; i < 12; i++) {
-      const angle = (i / 12) * Math.PI * 2;
-      pts.push({
-        x: c.cx + Math.cos(angle) * 0.04,
-        y: c.cy + Math.sin(angle) * 0.018,
-        idx: 36 + ci * 12 + i,
-      });
-    }
-  });
-  // Eyebrows
-  for (let i = 0; i < 6; i++) {
-    pts.push({ x: 0.36 + i * 0.018, y: 0.42 - i * 0.002, idx: 60 + i });
-    pts.push({ x: 0.55 + i * 0.018, y: 0.4 + i * 0.002, idx: 66 + i });
-  }
-  // Nose
-  for (let i = 0; i < 8; i++) {
-    pts.push({ x: 0.5, y: 0.46 + i * 0.018, idx: 80 + i });
-  }
-  // Lips
+  let idx = 0;
+  // Jaw + forehead outline (16 points instead of 36)
   for (let i = 0; i < 16; i++) {
     const angle = (i / 16) * Math.PI * 2;
     pts.push({
+      x: 0.5 + Math.cos(angle) * (0.18 + Math.sin(i / 4) * 0.01),
+      y: 0.5 + Math.sin(angle) * 0.24,
+      idx: idx++,
+    });
+  }
+  // Eyes — 4 points each (was 12) = 8
+  for (const c of [{ cx: 0.42, cy: 0.46 }, { cx: 0.58, cy: 0.46 }]) {
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2;
+      pts.push({
+        x: c.cx + Math.cos(angle) * 0.04,
+        y: c.cy + Math.sin(angle) * 0.018,
+        idx: idx++,
+      });
+    }
+  }
+  // Nose — 3 points (was 8)
+  for (let i = 0; i < 3; i++) pts.push({ x: 0.5, y: 0.5 + i * 0.04, idx: idx++ });
+  // Mouth — 5 points (was 16)
+  for (let i = 0; i < 5; i++) {
+    const angle = (i / 5) * Math.PI * 2;
+    pts.push({
       x: 0.5 + Math.cos(angle) * 0.06,
       y: 0.62 + Math.sin(angle) * 0.022,
-      idx: 100 + i,
+      idx: idx++,
     });
   }
   return pts;

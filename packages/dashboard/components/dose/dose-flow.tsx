@@ -3,25 +3,20 @@
 /**
  * DoseFlow — strict 9-step dose-taking with AI-watched verification.
  *
- * Layout (top → bottom):
- *  1. Top bar: cancel / step counter / help
- *  2. Step instruction card — ALWAYS visible, never covered
- *  3. Live camera viewport with detection overlay (45vh, fixed) — MIRRORED for selfie UX
- *     Frame capture for AI uses canvas → un-mirrored frame goes to model
- *  4. Detection log (terminal-style, shows AI reasoning live)
- *  5. Phase indicator (3 dot clusters)
- *  6. Action button (auto-advance / long-press for swallow)
- *  7. Rules monitor (compact bottom strip)
+ * This file is the orchestrator/render layer. All logic lives in hooks:
+ *  - useCamera           → getUserMedia + canvas capture
+ *  - useFaceTracker      → real face-api.js bbox + landmarks (~7 FPS)
+ *  - useMockDetections   → bbox/log visualization (10 FPS, paused during checking)
+ *  - useDoseStepRunner   → state machine: idle → checking → success/retry
  *
- * Mock detections from `lib/mock-detections.ts` give realistic visualization
- * even without vast.ai backend — bboxes evolve, scan lines move, log fills.
+ * Layout: top bar + instruction card · left col (camera+phase+button) ·
+ * right col (detection log + drugs hint + rules monitor).
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  Camera as CameraIcon,
   Check,
   Pill,
   Sparkles,
@@ -31,245 +26,55 @@ import {
   Eye,
   Brain,
 } from "lucide-react";
-import { useTBControlStore, type DoseFlowStep } from "@/lib/store";
+import { useTBControlStore } from "@/lib/store";
 import { DRUG_LABELS } from "@/lib/protocols";
 import { RulesMonitor } from "@/components/dose/rules-monitor";
 import { PhaseIndicator } from "@/components/dose/phase-indicator";
 import { DetectionOverlay } from "@/components/dose/detection-overlay";
 import { DetectionLog } from "@/components/dose/detection-log";
-import {
-  generateDetectionFrame,
-  type DetectionFrame,
-} from "@/lib/mock-detections";
+import { LongPressButton } from "@/components/dose/long-press-button";
 import { cn } from "@/lib/utils";
-import { detectPills, verifyFace, verifyPillCloseup } from "@/lib/inference";
-import { getWebApp } from "@/lib/telegram";
+import { useT } from "@/lib/use-t";
+import { useCamera } from "@/lib/use-camera";
 import { useFaceTracker } from "@/lib/use-face-tracker";
-
-const STEP_ORDER: DoseFlowStep[] = [
-  "face_id", "show_box",
-  "open_box", "show_pills", "pill_closeup", "show_glass",
-  "swallow", "mouth_check", "completed",
-];
-
-interface StepUI {
-  key: DoseFlowStep;
-  titleUz: string;
-  titleRu: string;
-  titleEn: string;
-  hintUz: string;
-  hintRu: string;
-  hintEn: string;
-  icon: typeof Pill;
-  modelLabel: string;
-}
-
-const STEP_META: Record<DoseFlowStep, StepUI | null> = {
-  rules_agreement: null,
-  completed: null,
-  face_id: {
-    key: "face_id",
-    titleUz: "Yuzni kameraga ko'rsating",
-    titleRu: "Покажите лицо в камеру",
-    titleEn: "Show your face to the camera",
-    hintUz: "Asta-sekin chapga, keyin o'ngga buring",
-    hintRu: "Медленно поверните голову влево, затем вправо",
-    hintEn: "Slowly turn your head left, then right",
-    icon: CameraIcon,
-    modelLabel: "Mediapipe FaceMesh + Embeddings",
-  },
-  show_box: {
-    key: "show_box",
-    titleUz: "Tabletka qutisini ko'rsating",
-    titleRu: "Покажите коробку с таблетками",
-    titleEn: "Show the pill box",
-    hintUz: "Qutining yorlig'i kameraga qaragan bo'lsin",
-    hintRu: "Этикеткой к камере",
-    hintEn: "Hold so the label faces the camera",
-    icon: Pill,
-    modelLabel: "YOLO v8 (custom-trained) + OCR",
-  },
-  open_box: {
-    key: "open_box",
-    titleUz: "Qutini oching",
-    titleRu: "Откройте коробку",
-    titleEn: "Open the box",
-    hintUz: "Qopqoqni ko'taring, blistir ko'rinsin",
-    hintRu: "Поднимите крышку — должен быть виден блистер",
-    hintEn: "Lift the lid — blister should be visible",
-    icon: Pill,
-    modelLabel: "Action detection + Optical flow",
-  },
-  show_pills: {
-    key: "show_pills",
-    titleUz: "Tabletkalarni kaftga oling",
-    titleRu: "Положите таблетки на ладонь",
-    titleEn: "Place pills on your palm",
-    hintUz: "Hammasi ko'rinishi kerak",
-    hintRu: "Все таблетки должны быть видны",
-    hintEn: "All pills must be visible",
-    icon: Pill,
-    modelLabel: "YOLO + Mediapipe Hands",
-  },
-  pill_closeup: {
-    key: "pill_closeup",
-    titleUz: "Tabletkani yaqinroq ko'rsating",
-    titleRu: "Поднесите таблетку ближе",
-    titleEn: "Hold the pill closer",
-    hintUz: "AI dorining turini tekshiradi",
-    hintRu: "ИИ проверит тип препарата",
-    hintEn: "AI will verify the drug type",
-    icon: Sparkles,
-    modelLabel: "Vision LLM (Qwen-VL 7B AWQ)",
-  },
-  show_glass: {
-    key: "show_glass",
-    titleUz: "Suvli stakanni ko'rsating",
-    titleRu: "Покажите стакан с водой",
-    titleEn: "Show the glass of water",
-    hintUz: "Stakan shaffof bo'lishi kerak",
-    hintRu: "Стакан должен быть прозрачным",
-    hintEn: "Glass must be transparent",
-    icon: Pill,
-    modelLabel: "YOLO + translucency check",
-  },
-  swallow: {
-    key: "swallow",
-    titleUz: "Tabletkani og'izga soling va suv iching",
-    titleRu: "Положите таблетку в рот и запейте",
-    titleEn: "Place pill in mouth and drink water",
-    hintUz: "Yutib, pastdagi tugmani bosib turing",
-    hintRu: "Проглотите и удерживайте кнопку внизу",
-    hintEn: "Swallow and hold the bottom button",
-    icon: Pill,
-    modelLabel: "Optical flow + gesture recognition",
-  },
-  mouth_check: {
-    key: "mouth_check",
-    titleUz: "Og'izni keng oching",
-    titleRu: "Откройте рот пошире",
-    titleEn: "Open your mouth wide",
-    hintUz: "AI tabletka o'tib ketganini tekshiradi",
-    hintRu: "ИИ убедится, что таблетка проглочена",
-    hintEn: "AI will confirm the pill is swallowed",
-    icon: Check,
-    modelLabel: "Mouth-cavity scan + Vision LLM",
-  },
-};
+import { useMockDetections } from "@/lib/use-mock-detections";
+import { useDoseStepRunner } from "@/lib/use-dose-step-runner";
+import { STEP_META, DOSE_STEP_ORDER } from "@/lib/dose-step-meta";
 
 export function DoseFlow({ locale }: { locale: string }) {
   const router = useRouter();
-  const {
-    prescription,
-    activeDose,
-    advanceDoseStep,
-    setRuleStatus,
-    completeDose,
-    resetActiveDose,
-  } = useTBControlStore();
-
-  const lang = (locale === "uz" || locale === "ru" ? locale : "en") as "uz" | "ru" | "en";
-  const t = (uz: string, ru: string, en: string) =>
-    lang === "uz" ? uz : lang === "ru" ? ru : en;
-
-  // Camera + canvas refs
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  // Step state
-  const [stepStatus, setStepStatus] = useState<"idle" | "checking" | "success" | "retry">("idle");
-  const [retryHint, setRetryHint] = useState<string | null>(null);
-  const [longPressProgress, setLongPressProgress] = useState(0);
-  const [collectedFlags, setCollectedFlags] = useState<{ type: string; note: string; timestamp: string }[]>([]);
-  const [aiVerdict, setAiVerdict] = useState<{ confidence: number | null; matches: boolean | null; pillCount: number | null }>({
-    confidence: null,
-    matches: null,
-    pillCount: null,
-  });
-
-  // Mock detection frame, refreshed at 30 FPS
-  const [stepStartedAt, setStepStartedAt] = useState<number>(() => Date.now());
-  const [detectionFrame, setDetectionFrame] = useState<DetectionFrame | null>(null);
-  const [aggregatedLog, setAggregatedLog] = useState<DetectionFrame["log"]>([]);
+  const { t, lang } = useT();
+  const { prescription, activeDose, advanceDoseStep, setRuleStatus } = useTBControlStore();
 
   const currentStep = activeDose.step;
   const meta = STEP_META[currentStep];
   const expectedDrugs = prescription?.doses[0]?.drugs.map((d) => d.drugCode) ?? [];
   const expectedPillCount = prescription?.doses[0]?.drugs.reduce((s, d) => s + d.count, 0) ?? 1;
 
-  // Bail if no prescription
-  useEffect(() => {
-    if (!prescription) router.replace(`/${locale}/awaiting-prescription`);
-    if (currentStep === "rules_agreement") advanceDoseStep("face_id");
-  }, [prescription, currentStep, advanceDoseStep, router, locale]);
+  // Hooks — order matters, must be called unconditionally before early returns
+  const camera = useCamera(true);
+  const realFaceTracking = useFaceTracker(camera.videoRef, currentStep === "face_id");
+  const stopCamera = () => camera.videoRef.current?.srcObject &&
+    (camera.videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
 
-  // When step changes, reset timer + log
-  useEffect(() => {
-    setStepStartedAt(Date.now());
-    setAggregatedLog([]);
-  }, [currentStep]);
+  const runner = useDoseStepRunner({
+    currentStep,
+    expectedDrugs,
+    patientId: prescription?.patientId ?? "demo-patient-1",
+    videoElement: camera.videoRef.current,
+    captureFrame: camera.captureFrame,
+    stopCamera,
+    lang,
+  });
 
-  // Camera setup
-  useEffect(() => {
-    let mounted = true;
-    const setup = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        });
-        if (!mounted) {
-          stream.getTracks().forEach((tr) => tr.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch (err) {
-        console.error("Camera unavailable:", err);
-        setCollectedFlags((f) => [
-          ...f,
-          {
-            type: "connection_lost",
-            note: "Camera permission denied or unavailable",
-            timestamp: new Date().toISOString(),
-          },
-        ]);
-      }
-    };
-    setup();
-    return () => {
-      mounted = false;
-      streamRef.current?.getTracks().forEach((tr) => tr.stop());
-    };
-  }, []);
+  // Mock visualization (paused during AI inference so face-api runs free)
+  const { detectionFrame, aggregatedLog } = useMockDetections(
+    currentStep,
+    expectedPillCount,
+    runner.stepStatus === "checking" || runner.stepStatus === "success",
+  );
 
-  // Mock detection generator — throttled to 10 FPS (was 30, caused lag).
-  // Paused during AI inference and success animation so face-api / Vision
-  // runs uncontested on the main thread.
-  useEffect(() => {
-    if (!meta) return;
-    if (stepStatus === "checking" || stepStatus === "success") return;
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - stepStartedAt;
-      const frame = generateDetectionFrame(currentStep, elapsed, expectedPillCount);
-      setDetectionFrame(frame);
-      if (frame.log.length > 0) {
-        setAggregatedLog((prev) => {
-          const existingTimes = new Set(prev.map((e) => e.time));
-          const newOnes = frame.log.filter((e) => !existingTimes.has(e.time));
-          if (newOnes.length === 0) return prev;
-          return [...prev, ...newOnes].slice(-12);
-        });
-      }
-    }, 100); // 10 FPS — smooth without thrashing React
-    return () => clearInterval(interval);
-  }, [currentStep, stepStartedAt, expectedPillCount, meta, stepStatus]);
-
-  // Real face tracking — only active on face_id step. ~7 FPS, gentle on CPU.
-  const realFaceTracking = useFaceTracker(videoRef, currentStep === "face_id");
-
-  // Mock rule monitor
+  // Mock rule monitor — gentle 2.5s jitter
   useEffect(() => {
     const interval = setInterval(() => {
       const rules = ["faceInFrame", "lighting", "singlePerson", "cameraStable", "handsVisible"] as const;
@@ -281,221 +86,45 @@ export function DoseFlow({ locale }: { locale: string }) {
     return () => clearInterval(interval);
   }, [setRuleStatus]);
 
-  // Capture frame as blob (UN-mirrored for AI).
-  // The CSS `transform: scaleX(-1)` on the <video> element only mirrors the
-  // visible pixels for selfie UX — `drawImage` reads the un-mirrored pixel
-  // buffer, which is exactly what AI models need (text on box reads correctly).
-  // DO NOT add a canvas mirror here or AI will get flipped frames.
-  const captureFrame = useCallback((): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!video || !canvas) return resolve(null);
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return resolve(null);
-      ctx.drawImage(video, 0, 0);
-      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.85);
-    });
-  }, []);
-
-  // Run AI check on current step
-  const runStepCheck = useCallback(async () => {
-    if (!meta) return;
-    setStepStatus("checking");
-    setRetryHint(null);
-
-    const frame =
-      typeof document !== "undefined"
-        ? (await captureFrame()) ?? new Blob([new Uint8Array(8)], { type: "image/jpeg" })
-        : new Blob([new Uint8Array(8)], { type: "image/jpeg" });
-
-    try {
-      let success = false;
-      let confidence: number | null = null;
-
-      if (currentStep === "face_id") {
-        // verifyFace now uses face-api.js client-side, requires the video element
-        const video = videoRef.current;
-        if (!video || video.videoWidth === 0) {
-          throw new Error("Video element not ready");
-        }
-        const r = await verifyFace(video, prescription?.patientId ?? "demo-patient-1");
-        confidence = r.similarity;
-        success = r.match;
-        setAiVerdict((v) => ({ ...v, confidence: r.similarity }));
-        if (!r.detected) {
-          setRetryHint(t(
-            "Yuz topilmadi — kameraga aniqroq qarang",
-            "Лицо не найдено — посмотрите чётче",
-            "No face detected — look directly at camera",
-          ));
-        } else if (!success) {
-          setRetryHint(t(
-            "Bu boshqa odam ko'rinadi — qaytadan urining",
-            "Похоже, это другой человек — попробуйте снова",
-            "Looks like a different person — try again",
-          ));
-        }
-      } else if (currentStep === "show_box" || currentStep === "show_pills") {
-        const r = await detectPills(frame);
-        confidence = r.detections.length > 0 ? r.detections[0].confidence : 0;
-        const pillCount = r.detections.length;
-        setAiVerdict((v) => ({ ...v, pillCount }));
-        success = r.detections.length >= (currentStep === "show_pills" ? expectedDrugs.length : 1);
-        if (!success) {
-          setRetryHint(t(
-            "Tabletkalar aniq ko'rinmayapti — yaqinlashtiring",
-            "Таблетки не видны чётко — поднесите ближе",
-            "Pills not clearly visible — bring closer",
-          ));
-        }
-      } else if (currentStep === "pill_closeup") {
-        const r = await verifyPillCloseup(frame, expectedDrugs);
-        confidence = r.confidence;
-        success = r.matches;
-        setAiVerdict((v) => ({ ...v, matches: r.matches, confidence: r.confidence }));
-        if (!success) {
-          setRetryHint(t(
-            "Tabletka aniq ko'rinmayapti — yorug'lik va fokus",
-            "Таблетка не видна чётко — свет и фокус",
-            "Pill not clearly visible — check light and focus",
-          ));
-        }
-      } else {
-        await new Promise((r) => setTimeout(r, 1400 + Math.random() * 800));
-        success = Math.random() > 0.15;
-        confidence = 0.82 + Math.random() * 0.13;
-        if (!success) {
-          setRetryHint(t(
-            "Harakat aniq emas — qaytadan urining",
-            "Действие не распознано — попробуйте ещё раз",
-            "Action unclear — try again",
-          ));
-        }
-      }
-
-      if (success) {
-        setStepStatus("success");
-        getWebApp()?.HapticFeedback.notificationOccurred("success");
-        setTimeout(() => {
-          const idx = STEP_ORDER.indexOf(currentStep);
-          const next = STEP_ORDER[idx + 1];
-          if (next === "completed") {
-            finalizeDose();
-          } else {
-            advanceDoseStep(next);
-            setStepStatus("idle");
-            setAiVerdict({ confidence: null, matches: null, pillCount: null });
-          }
-        }, 700);
-      } else {
-        setStepStatus("retry");
-        getWebApp()?.HapticFeedback.notificationOccurred("warning");
-        if (confidence !== null && confidence < 0.5) {
-          setCollectedFlags((f) => [
-            ...f,
-            {
-              type: `${currentStep}_low_confidence`,
-              note: `AI confidence ${(confidence! * 100).toFixed(0)}% on ${currentStep}`,
-              timestamp: new Date().toISOString(),
-            },
-          ]);
-        }
-      }
-    } catch (err) {
-      console.error("Step check failed:", err);
-      setStepStatus("retry");
-      setRetryHint(t(
-        "Aloqa xatosi — qayta urining",
-        "Ошибка соединения — попробуйте снова",
-        "Connection issue — try again",
-      ));
-      setCollectedFlags((f) => [
-        ...f,
-        {
-          type: "connection_lost",
-          note: `Inference failed at ${currentStep}: ${(err as Error).message}`,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-    }
-  }, [currentStep, captureFrame, expectedDrugs, prescription, advanceDoseStep, t, meta]);
-
-  // Long-press confirm for swallow step
+  // Bail to awaiting-prescription if we landed here without a prescription;
+  // skip the rules_agreement step (legacy from when it was inline)
   useEffect(() => {
-    if (currentStep !== "swallow") return;
-    if (longPressProgress >= 100) {
-      runStepCheck();
-      setLongPressProgress(0);
-    }
-  }, [longPressProgress, currentStep, runStepCheck]);
-
-  const finalizeDose = () => {
-    completeDose(
-      {
-        faceMatch: aiVerdict.confidence,
-        pillCount: aiVerdict.pillCount,
-        pillType: aiVerdict.matches ? expectedDrugs : null,
-        swallowDetected: true,
-        mouthEmpty: true,
-        rulesViolated: [],
-      },
-      collectedFlags.map((f) => ({
-        type: f.type as "face_mismatch" | "pill_mismatch" | "swallow_uncertain" | "mouth_unclear" | "connection_lost" | "rule_violation",
-        note: f.note,
-        timestamp: f.timestamp,
-      })),
-    );
-    streamRef.current?.getTracks().forEach((tr) => tr.stop());
-    router.push(`/${locale}/dose/complete`);
-  };
-
-  const cancelDose = () => {
-    if (confirm(t(
-      "Qabulni to'xtatasizmi? Bu qizil bayroq qoldiradi.",
-      "Прервать приём? Это оставит красный флажок.",
-      "Cancel dose? This leaves a red flag.",
-    ))) {
-      streamRef.current?.getTracks().forEach((tr) => tr.stop());
-      resetActiveDose();
-      router.push(`/${locale}/today`);
-    }
-  };
+    if (!prescription) router.replace(`/${locale}/awaiting-prescription`);
+    if (currentStep === "rules_agreement") advanceDoseStep("face_id");
+  }, [prescription, currentStep, advanceDoseStep, router, locale]);
 
   if (!meta || !prescription) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p className="text-[var(--color-slate-500)]">Loading...</p>
+      <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
+        <p>Loading…</p>
       </main>
     );
   }
 
   const StepIcon = meta.icon;
-  const stepIdx = STEP_ORDER.indexOf(currentStep);
-  const totalSteps = STEP_ORDER.length - 1;
+  const stepIdx = DOSE_STEP_ORDER.indexOf(currentStep);
+  const totalSteps = DOSE_STEP_ORDER.length - 1;
+  const titleKey = `title${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as const;
+  const hintKey = `hint${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as const;
 
   return (
     <main className="min-h-screen flex flex-col bg-slate-950 text-white relative">
-      {/* TOP BAR — full width */}
+      {/* TOP BAR */}
       <header className="z-30 px-6 py-3 flex items-center justify-between bg-slate-900/95 backdrop-blur border-b border-slate-800 shrink-0">
         <button
-          onClick={cancelDose}
+          onClick={runner.cancelDose}
           className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center"
           aria-label="cancel"
         >
           <X size={18} />
         </button>
-        <div className="text-center flex items-center gap-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 font-mono">
-              {t("AI VERIFIED INTAKE", "ПРИЁМ ПОД AI", "AI VERIFIED INTAKE")}
-            </p>
-            <p className="text-sm font-bold tabular font-mono">
-              STEP {stepIdx + 1} / {totalSteps}
-            </p>
-          </div>
+        <div className="text-center">
+          <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 font-mono">
+            {t("AI VERIFIED INTAKE", "ПРИЁМ ПОД AI", "AI VERIFIED INTAKE")}
+          </p>
+          <p className="text-sm font-bold tabular font-mono">
+            STEP {stepIdx + 1} / {totalSteps}
+          </p>
         </div>
         <button
           onClick={() => alert(t("Yordam tez orada", "Помощь скоро", "Help coming soon"))}
@@ -506,9 +135,8 @@ export function DoseFlow({ locale }: { locale: string }) {
         </button>
       </header>
 
-      {/* CONTENT WRAPPER (max-w-6xl centered) */}
       <div className="flex-1 max-w-6xl w-full mx-auto px-4 py-4 flex flex-col gap-3">
-        {/* INSTRUCTION CARD — full width */}
+        {/* INSTRUCTION CARD */}
         <motion.div
           key={currentStep}
           initial={{ opacity: 0, y: -8 }}
@@ -520,10 +148,10 @@ export function DoseFlow({ locale }: { locale: string }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-heading font-bold text-base leading-tight">
-              {meta[`title${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "titleUz" | "titleRu" | "titleEn"]}
+              {meta[titleKey]}
             </p>
             <p className="text-sm text-slate-400 mt-0.5">
-              {retryHint ?? meta[`hint${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "hintUz" | "hintRu" | "hintEn"]}
+              {runner.retryHint ?? meta[hintKey]}
             </p>
           </div>
           <div className="hidden md:block px-3 py-1.5 rounded-md bg-slate-900 text-slate-400 text-[10px] font-mono border border-slate-700 shrink-0">
@@ -531,30 +159,27 @@ export function DoseFlow({ locale }: { locale: string }) {
           </div>
         </motion.div>
 
-        {/* GRID — 2 columns on lg+, single column on mobile */}
+        {/* GRID: camera (left) + side panel (right) */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-3 flex-1 min-h-0">
-          {/* LEFT: Camera + phase + button */}
+          {/* LEFT: Camera + phase + action button */}
           <div className="flex flex-col gap-3 min-h-0">
-            {/* CAMERA VIEWPORT — square */}
             <section className="relative rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 aspect-square mx-auto w-full max-w-[640px]">
               <video
-                ref={videoRef}
+                ref={camera.videoRef}
                 autoPlay
                 playsInline
                 muted
                 className="w-full h-full object-cover"
                 style={{ transform: "scaleX(-1)" }}
               />
-              <canvas ref={canvasRef} className="hidden" />
+              <canvas ref={camera.canvasRef} className="hidden" />
 
-              {/* Detection overlay — real face tracker on face_id step,
-                  mock visualization for everything else */}
               {detectionFrame && (
                 <DetectionOverlay
                   bboxes={detectionFrame.bboxes}
                   faceLandmarks={detectionFrame.faceLandmarks}
                   scanProgress={detectionFrame.scanProgress}
-                  isScanning={detectionFrame.phase === "scanning" || stepStatus === "checking"}
+                  isScanning={detectionFrame.phase === "scanning" || runner.stepStatus === "checking"}
                   mirrored
                   realTracking={realFaceTracking}
                   step={currentStep}
@@ -570,13 +195,13 @@ export function DoseFlow({ locale }: { locale: string }) {
                   </span>
                   REC
                 </div>
-                {stepStatus === "checking" && (
+                {runner.stepStatus === "checking" && (
                   <div className="px-3 py-1.5 rounded-full bg-cyan-500 text-white text-xs font-bold font-mono flex items-center gap-1.5">
                     <Brain size={13} className="animate-pulse" />
                     ANALYZING
                   </div>
                 )}
-                {stepStatus === "success" && (
+                {runner.stepStatus === "success" && (
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -586,7 +211,7 @@ export function DoseFlow({ locale }: { locale: string }) {
                     VERIFIED
                   </motion.div>
                 )}
-                {stepStatus === "retry" && (
+                {runner.stepStatus === "retry" && (
                   <div className="px-3 py-1.5 rounded-full bg-amber-500 text-white text-xs font-bold font-mono flex items-center gap-1.5">
                     <AlertCircle size={13} />
                     RETRY
@@ -594,7 +219,6 @@ export function DoseFlow({ locale }: { locale: string }) {
                 )}
               </div>
 
-              {/* Bottom-right model label */}
               <div className="absolute bottom-3 right-3 pointer-events-none">
                 <div className="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur text-white text-[10px] font-mono flex items-center gap-1.5">
                   <Eye size={11} />
@@ -603,63 +227,12 @@ export function DoseFlow({ locale }: { locale: string }) {
               </div>
             </section>
 
-            {/* PHASE INDICATOR */}
             <PhaseIndicator currentStep={currentStep} locale={locale} />
 
-            {/* ACTION BUTTON */}
-            <div>
-              {currentStep === "swallow" ? (
-                <LongPressButton
-                  label={t("Yutdim — bosib turing", "Я проглотил — удерживайте", "I've swallowed — hold")}
-                  onComplete={() => setLongPressProgress(100)}
-                  progress={longPressProgress}
-                  setProgress={setLongPressProgress}
-                  disabled={stepStatus === "checking"}
-                />
-              ) : currentStep === "mouth_check" ? (
-                <button
-                  onClick={runStepCheck}
-                  disabled={stepStatus === "checking"}
-                  className="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-50"
-                >
-                  <Check size={20} strokeWidth={2.5} />
-                  {stepStatus === "checking"
-                    ? t("Tekshirilmoqda…", "Проверяю…", "Checking…")
-                    : t("Og'iz bo'sh — yakunlash", "Рот пуст — завершить", "Mouth empty — finish")}
-                </button>
-              ) : (
-                <button
-                  onClick={runStepCheck}
-                  disabled={stepStatus === "checking"}
-                  className={cn(
-                    "w-full h-14 rounded-2xl font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-60",
-                    stepStatus === "retry"
-                      ? "bg-amber-500 hover:bg-amber-400 text-white"
-                      : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-dark)] text-white",
-                  )}
-                >
-                  {stepStatus === "checking" ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                      {t("AI tekshirmoqda…", "ИИ проверяет…", "AI checking…")}
-                    </>
-                  ) : stepStatus === "retry" ? (
-                    <>
-                      <AlertCircle size={20} />
-                      {t("Qayta urining", "Попробовать снова", "Try again")}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={20} />
-                      {t("Tayyor — tekshiruv", "Готово — проверить", "Ready — verify")}
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+            <ActionButton runner={runner} t={t} currentStep={currentStep} />
           </div>
 
-          {/* RIGHT: Side panel — detection log + drugs hint + rules monitor */}
+          {/* RIGHT: detection log + drugs + rules */}
           <aside className="flex flex-col gap-3 min-h-0">
             <DetectionLog
               entries={aggregatedLog}
@@ -667,7 +240,6 @@ export function DoseFlow({ locale }: { locale: string }) {
               modelName={meta.modelLabel}
             />
 
-            {/* Drugs hint + Ascorutin reference */}
             {(currentStep === "show_pills" || currentStep === "show_box") && (
               <div className="bg-slate-900 border border-slate-700 rounded-2xl p-3">
                 <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 font-mono">
@@ -697,7 +269,6 @@ export function DoseFlow({ locale }: { locale: string }) {
               </div>
             )}
 
-            {/* Rules monitor (vertical) */}
             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-3">
               <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 font-mono">
                 {t("Qoidalar holati", "Соблюдение правил", "Rules status")}
@@ -712,67 +283,70 @@ export function DoseFlow({ locale }: { locale: string }) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Long-press button (for swallow confirmation)
+// Action button — centralized step → button mapping
 // ────────────────────────────────────────────────────────────────────────────
 
-function LongPressButton({
-  label,
-  onComplete,
-  progress,
-  setProgress,
-  disabled,
+function ActionButton({
+  runner,
+  t,
+  currentStep,
 }: {
-  label: string;
-  onComplete: () => void;
-  progress: number;
-  setProgress: React.Dispatch<React.SetStateAction<number>>;
-  disabled?: boolean;
+  runner: ReturnType<typeof useDoseStepRunner>;
+  t: (uz: string, ru: string, en: string) => string;
+  currentStep: string;
 }) {
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const start = () => {
-    if (disabled) return;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      // Functional update — must read latest state, not stale closure value
-      setProgress((p) => {
-        const next = Math.min(100, p + 4);
-        if (next >= 100 && intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        return next;
-      });
-    }, 50);
-  };
-  const stop = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setProgress((p) => (p < 100 ? 0 : p));
-  };
-
-  useEffect(() => {
-    if (progress >= 100) onComplete();
-  }, [progress, onComplete]);
-
+  if (currentStep === "swallow") {
+    return (
+      <LongPressButton
+        label={t("Yutdim — bosib turing", "Я проглотил — удерживайте", "I've swallowed — hold")}
+        onComplete={() => runner.setLongPressProgress(100)}
+        progress={runner.longPressProgress}
+        setProgress={runner.setLongPressProgress}
+        disabled={runner.stepStatus === "checking"}
+      />
+    );
+  }
+  if (currentStep === "mouth_check") {
+    return (
+      <button
+        onClick={runner.runStepCheck}
+        disabled={runner.stepStatus === "checking"}
+        className="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-50"
+      >
+        <Check size={20} strokeWidth={2.5} />
+        {runner.stepStatus === "checking"
+          ? t("Tekshirilmoqda…", "Проверяю…", "Checking…")
+          : t("Og'iz bo'sh — yakunlash", "Рот пуст — завершить", "Mouth empty — finish")}
+      </button>
+    );
+  }
   return (
     <button
-      onPointerDown={start}
-      onPointerUp={stop}
-      onPointerLeave={stop}
-      disabled={disabled}
-      className="relative w-full h-12 rounded-2xl bg-amber-500 text-white font-heading font-bold text-sm flex items-center justify-center gap-2 shadow-lg overflow-hidden disabled:opacity-50 select-none"
+      onClick={runner.runStepCheck}
+      disabled={runner.stepStatus === "checking"}
+      className={cn(
+        "w-full h-14 rounded-2xl font-heading font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition disabled:opacity-60",
+        runner.stepStatus === "retry"
+          ? "bg-amber-500 hover:bg-amber-400 text-white"
+          : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-dark)] text-white",
+      )}
     >
-      <div
-        className="absolute inset-0 bg-white/20 transition-all"
-        style={{ width: `${progress}%` }}
-      />
-      <span className="relative z-10 flex items-center gap-2">
-        <Pill size={18} />
-        {label}
-      </span>
+      {runner.stepStatus === "checking" ? (
+        <>
+          <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+          {t("AI tekshirmoqda…", "ИИ проверяет…", "AI checking…")}
+        </>
+      ) : runner.stepStatus === "retry" ? (
+        <>
+          <AlertCircle size={20} />
+          {t("Qayta urining", "Попробовать снова", "Try again")}
+        </>
+      ) : (
+        <>
+          <Sparkles size={20} />
+          {t("Tayyor — tekshiruv", "Готово — проверить", "Ready — verify")}
+        </>
+      )}
     </button>
   );
 }

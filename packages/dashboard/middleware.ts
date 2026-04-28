@@ -12,7 +12,10 @@ export default createMiddleware({
   locales: locales as unknown as string[],
   defaultLocale,
   localePrefix: "as-needed", // / → uz (no /uz/), /ru, /en
-  localeDetection: true,
+  // Disabled: was redirecting Russian-browser users away from explicit /uz clicks
+  // (Accept-Language ru → / would bounce to /ru, breaking the language switcher).
+  // Target audience is Uzbekistan; default uz, let user pick via LanguageSwitcher.
+  localeDetection: false,
 });
 
 export const config = {

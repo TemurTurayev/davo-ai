@@ -31,6 +31,7 @@ import { PROTOCOLS, DRUG_LABELS } from "@/lib/protocols";
 import { TBControlLogo } from "@/components/brand/tb-control-logo";
 import { ProgressArc } from "./progress-arc";
 import { AIInsightCard } from "./ai-insight-card";
+import { useT } from "@/lib/use-t";
 
 export function TodayScreen({ locale }: { locale: string }) {
   const router = useRouter();
@@ -38,9 +39,7 @@ export function TodayScreen({ locale }: { locale: string }) {
 
   const { prescription, doses, rulesConsent, startDose } = useTBControlStore();
 
-  const lang = (locale === "uz" || locale === "ru" ? locale : "en") as "uz" | "ru" | "en";
-  const t = (uz: string, ru: string, en: string) =>
-    lang === "uz" ? uz : lang === "ru" ? ru : en;
+  const { t, lang } = useT();
 
   // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP — never after early returns.
   // Greeting (deferred to client-only to avoid hydration mismatch)
