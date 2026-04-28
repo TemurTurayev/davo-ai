@@ -106,3 +106,4 @@ assets/pitch/generated/
 # Telegram local bot API data
 telegram-bot-api-data/
 data/tb_pills_yolo/
+.synth_*
