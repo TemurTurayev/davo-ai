@@ -1,0 +1,125 @@
+{
+  "brand": {
+    "name": "Nafas",
+    "tagline": "Breathe through treatment, together"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "next": "Continue",
+    "back": "Back",
+    "skip": "Skip",
+    "yes": "Yes",
+    "no": "No",
+    "done": "Done",
+    "close": "Close"
+  },
+  "landing": {
+    "hero_title": "Your TB treatment companion",
+    "hero_sub": "Daily reminders, AI verification of doses, side-effect guidance — in your pocket",
+    "cta_start": "Get started",
+    "cta_doctor": "I'm a clinician",
+    "trust_badges": {
+      "who": "WHO-aligned protocols",
+      "moh": "Uzbekistan MoH compatible",
+      "secure": "End-to-end secure"
+    },
+    "features": {
+      "reminder": {
+        "title": "Smart reminders",
+        "body": "A gentle nudge at the time that works for you"
+      },
+      "video": {
+        "title": "15-second video",
+        "body": "AI confirms you took your dose — no clinic visit needed"
+      },
+      "chat": {
+        "title": "Side-effect guidance",
+        "body": "Medical assistant available 24/7 in your language"
+      },
+      "doctor": {
+        "title": "Your doctor is close",
+        "body": "Real-time alerts route the right cases to your clinician"
+      }
+    }
+  },
+  "onboarding": {
+    "step": "{current} / {total}",
+    "lang_title": "Choose your language",
+    "name_title": "What's your name?",
+    "name_placeholder": "Full name",
+    "regimen_title": "What treatment regimen are you on?",
+    "regimen_dstb": "Drug-sensitive TB",
+    "regimen_dstb_desc": "RHZE — 6 months",
+    "regimen_mdr": "Multi-drug-resistant TB",
+    "regimen_mdr_desc": "Custom regimen — 9-20 months",
+    "regimen_unknown": "I'm not sure",
+    "regimen_unknown_desc": "I'll ask my doctor",
+    "time_title": "When do you take your dose?",
+    "time_sub": "Pick the time that suits you",
+    "permissions_title": "Permissions",
+    "permissions_camera": "Camera — for the short verification video",
+    "permissions_notifications": "Notifications — so you don't miss reminders",
+    "complete_title": "All set!",
+    "complete_sub": "Your first reminder arrives tomorrow at {time}"
+  },
+  "daily": {
+    "title": "Today's dose",
+    "ready_to_record": "Take your dose and press record when ready",
+    "record_button": "Record video",
+    "recording": "Recording...",
+    "preview_title": "Video ready",
+    "rerecord": "Re-record",
+    "send": "Send to doctor",
+    "verifying": "Verifying...",
+    "verified": "Great! Dose confirmed",
+    "review": "Your doctor will review",
+    "day_of": "Treatment day: {current} of {total}"
+  },
+  "calendar": {
+    "title": "Your progress",
+    "month_summary": "{taken} days taken, {missed} missed",
+    "legend_taken": "Taken",
+    "legend_missed": "Missed",
+    "legend_upcoming": "Upcoming",
+    "legend_today": "Today"
+  },
+  "side_effects": {
+    "title": "How are you feeling?",
+    "feel_good": "I'm doing well",
+    "have_complaint": "I have a concern",
+    "categories": {
+      "stomach": "Stomach",
+      "skin": "Skin",
+      "vision": "Vision",
+      "energy": "Tiredness",
+      "joints": "Joints",
+      "other": "Other"
+    },
+    "describe": "Tell us more",
+    "voice_input": "Use voice",
+    "submitting": "Sending...",
+    "submitted": "Logged",
+    "urgent": "URGENT! This could be a serious sign. Contact your doctor immediately.",
+    "advice": "Guidance"
+  },
+  "doctor": {
+    "patients": "Patients",
+    "alerts": "Need attention",
+    "review_queue": "Review queue",
+    "all_good": "All clear",
+    "filter_all": "All",
+    "filter_at_risk": "At risk",
+    "filter_review": "Pending review",
+    "patient_details": "Patient details"
+  },
+  "errors": {
+    "network": "No internet connection",
+    "camera_denied": "Camera permission denied",
+    "video_too_short": "Video too short — at least 5 seconds",
+    "video_too_long": "Video too long — max 30 seconds"
+  }
+}

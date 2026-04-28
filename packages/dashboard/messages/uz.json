@@ -1,0 +1,125 @@
+{
+  "brand": {
+    "name": "Nafas",
+    "tagline": "Sogʻlom nafas — ishonchli davolanish"
+  },
+  "common": {
+    "loading": "Yuklanmoqda...",
+    "error": "Xatolik yuz berdi",
+    "retry": "Qayta urinish",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "next": "Davom etish",
+    "back": "Orqaga",
+    "skip": "Oʻtkazib yuborish",
+    "yes": "Ha",
+    "no": "Yoʻq",
+    "done": "Tayyor",
+    "close": "Yopish"
+  },
+  "landing": {
+    "hero_title": "Sil davolashda yordamchingiz",
+    "hero_sub": "Har kuni dorini eslataman, qabul qilganingizni tasdiqlayman, yon ta'sirlar haqida maslahat beraman",
+    "cta_start": "Boshlash",
+    "cta_doctor": "Men shifokorman",
+    "trust_badges": {
+      "who": "WHO ko'rsatmalari",
+      "moh": "MZ RUz tasdig'i",
+      "secure": "Maxfiy ma'lumot"
+    },
+    "features": {
+      "reminder": {
+        "title": "Aqlli eslatmalar",
+        "body": "Sizga qulay vaqtda yumshoq xabar beraman"
+      },
+      "video": {
+        "title": "15 soniyalik video",
+        "body": "Dorini qabul qilganingizni AI tasdiqlaydi"
+      },
+      "chat": {
+        "title": "Yon ta'sir bo'yicha maslahat",
+        "body": "O'zbek tilida tibbiy yordamchi 24/7"
+      },
+      "doctor": {
+        "title": "Shifokor yaqin",
+        "body": "Kerak bo'lsa, tezda javob oladi"
+      }
+    }
+  },
+  "onboarding": {
+    "step": "{current} / {total}",
+    "lang_title": "Tilingizni tanlang",
+    "name_title": "Ismingiz qanday?",
+    "name_placeholder": "Familiya Ismingiz",
+    "regimen_title": "Qaysi davolanish rejimida siz?",
+    "regimen_dstb": "Oddiy ТБ (DS-TB)",
+    "regimen_dstb_desc": "RHZE — 6 oy",
+    "regimen_mdr": "Ko'p dorili turg'un (MDR-TB)",
+    "regimen_mdr_desc": "Maxsus rejim — 9-20 oy",
+    "regimen_unknown": "Bilmayman",
+    "regimen_unknown_desc": "Shifokorimga aytib beraman",
+    "time_title": "Dori qabul qilish vaqti",
+    "time_sub": "Sizga qulay vaqtni tanlang",
+    "permissions_title": "Ruxsatlar",
+    "permissions_camera": "Kamera — qisqa video uchun",
+    "permissions_notifications": "Eslatmalar — vaqtni eslatib turish uchun",
+    "complete_title": "Tayyor!",
+    "complete_sub": "Ertaga soat {time} da birinchi eslatma keladi"
+  },
+  "daily": {
+    "title": "Bugungi qabul",
+    "ready_to_record": "Dorini oling va tayyor bo'lganda yozib oling",
+    "record_button": "Video yozish",
+    "recording": "Yozilmoqda...",
+    "preview_title": "Video tayyor",
+    "rerecord": "Qayta yozish",
+    "send": "Shifokorga yuborish",
+    "verifying": "Tekshirilmoqda...",
+    "verified": "Ajoyib! Doza tasdiqlandi",
+    "review": "Shifokoringiz ko'rib chiqadi",
+    "day_of": "Davolash kuni: {current} / {total}"
+  },
+  "calendar": {
+    "title": "Mening progressim",
+    "month_summary": "{taken} kun qabul qilindi, {missed} kun pauza",
+    "legend_taken": "Qabul qilindi",
+    "legend_missed": "O'tkazildi",
+    "legend_upcoming": "Kelmoqda",
+    "legend_today": "Bugun"
+  },
+  "side_effects": {
+    "title": "Qanday his qilyapsiz?",
+    "feel_good": "Yaxshiman",
+    "have_complaint": "Shikoyatim bor",
+    "categories": {
+      "stomach": "Oshqozon",
+      "skin": "Teri",
+      "vision": "Ko'rish",
+      "energy": "Charchoq",
+      "joints": "Bo'g'imlar",
+      "other": "Boshqa"
+    },
+    "describe": "Iltimos, batafsilroq ayting",
+    "voice_input": "Ovozda ayting",
+    "submitting": "Yuborilmoqda...",
+    "submitted": "Yozib olindi",
+    "urgent": "DIQQAT! Bu jiddiy belgi bo'lishi mumkin. Shifokoringizga darhol murojaat qiling.",
+    "advice": "Maslahat"
+  },
+  "doctor": {
+    "patients": "Bemorlar",
+    "alerts": "Diqqat talab qiladi",
+    "review_queue": "Tekshirish navbati",
+    "all_good": "Hammasi yaxshi",
+    "filter_all": "Hammasi",
+    "filter_at_risk": "Xavf ostida",
+    "filter_review": "Tekshirish kerak",
+    "patient_details": "Bemor haqida ma'lumot"
+  },
+  "errors": {
+    "network": "Internet bilan bog'lanish yo'q",
+    "camera_denied": "Kamera ruxsati berilmagan",
+    "video_too_short": "Video qisqa, kamida 5 soniya",
+    "video_too_long": "Video uzun, ko'pi bilan 30 soniya"
+  }
+}
