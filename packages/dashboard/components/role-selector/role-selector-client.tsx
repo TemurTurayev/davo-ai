@@ -54,7 +54,7 @@ export function RoleSelectorClient({ locale }: { locale: string }) {
   };
 
   return (
-    <main className="bg-aurora min-h-screen relative flex flex-col">
+    <main className="bg-aurora min-h-screen relative overflow-hidden flex flex-col">
       {/* Floating orbs (decorative) */}
       <div className="orb orb-brand w-72 h-72 -top-20 -left-20 animate-float-slow" />
       <div className="orb orb-coral w-64 h-64 top-1/3 -right-16 animate-float-slow" style={{ animationDelay: "2s" }} />

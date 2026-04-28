@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 /**
  * Detection Log — live "console-style" feed showing what AI is doing.
  *
@@ -30,7 +32,9 @@ interface DetectionLogProps {
   modelName?: string;
 }
 
-export function DetectionLog({
+export const DetectionLog = memo(DetectionLogInner);
+
+function DetectionLogInner({
   entries,
   maxEntries = 5,
   confidence,

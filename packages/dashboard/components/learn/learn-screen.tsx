@@ -258,7 +258,7 @@ export function LearnScreen({ locale }: { locale: string }) {
   };
 
   return (
-    <main className="bg-aurora min-h-screen relative">
+    <main className="bg-aurora min-h-screen relative overflow-hidden">
       <div className="orb orb-teal w-64 h-64 -left-20 top-40 opacity-30" />
 
       <div className="relative max-w-2xl mx-auto px-5 pt-6 pb-8 z-10">

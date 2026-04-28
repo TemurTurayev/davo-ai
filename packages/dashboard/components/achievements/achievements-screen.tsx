@@ -133,7 +133,7 @@ export function AchievementsScreen({ locale }: { locale: string }) {
   };
 
   return (
-    <main className="bg-aurora min-h-screen relative">
+    <main className="bg-aurora min-h-screen relative overflow-hidden">
       <div className="orb orb-coral w-72 h-72 -right-20 top-20 animate-float-slow" />
 
       <div className="relative max-w-2xl mx-auto px-5 pt-6 pb-8 z-10">

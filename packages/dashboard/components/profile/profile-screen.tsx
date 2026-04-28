@@ -69,7 +69,7 @@ export function ProfileScreen({ locale }: { locale: string }) {
     : null;
 
   return (
-    <main className="bg-aurora min-h-screen relative pb-24">
+    <main className="bg-aurora min-h-screen relative overflow-hidden">
       <div className="orb orb-brand w-72 h-72 -top-20 -right-20 animate-float-slow" />
 
       <div className="relative z-10 max-w-xl mx-auto px-5 pt-6 pb-6">

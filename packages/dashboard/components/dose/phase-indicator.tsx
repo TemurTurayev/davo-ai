@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 /**
  * Phase indicator — bottom progress visualization.
  * 3 phases (Identify → Verify → Ingest) × dots per step.
@@ -29,7 +31,9 @@ const ALL_STEPS: DoseFlowStep[] = [
   "swallow", "mouth_check",
 ];
 
-export function PhaseIndicator({
+export const PhaseIndicator = memo(PhaseIndicatorInner);
+
+function PhaseIndicatorInner({
   currentStep,
   locale,
 }: {

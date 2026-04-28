@@ -333,12 +333,21 @@ export const useTBControlStore = create<TBControlState>()(
     }),
     {
       name: "tb-control-state",
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => {
         if (typeof window === "undefined") {
           return { getItem: () => null, setItem: () => {}, removeItem: () => {} };
         }
         return localStorage;
+      }),
+      // Only persist long-lived prefs across sessions. Rules consent + dose history
+      // intentionally NOT persisted — every fresh session shows the full onboarding
+      // flow (rules quiz, prescription pickup) which is what we want during demo
+      // testing. Theme survives so user doesn't get jarred between sessions.
+      partialize: (s) => ({
+        role: s.role,
+        prescription: s.prescription,
+        theme: s.theme,
       }),
     },
   ),

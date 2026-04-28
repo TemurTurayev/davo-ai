@@ -129,7 +129,7 @@ export function VideoReviewQueue({ locale }: { locale: string }) {
   };
 
   return (
-    <main className="bg-aurora min-h-screen relative pb-12">
+    <main className="bg-aurora min-h-screen relative overflow-hidden pb-12">
       <div className="orb orb-coral w-72 h-72 -top-20 -right-20 animate-float-slow" />
 
       <div className="relative z-10 max-w-3xl mx-auto px-5 pt-6 pb-6">

@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { detectPills, verifyFace, verifyPillCloseup } from "@/lib/inference";
 import { getWebApp } from "@/lib/telegram";
+import { useFaceTracker } from "@/lib/use-face-tracker";
 
 const STEP_ORDER: DoseFlowStep[] = [
   "face_id", "show_box",
@@ -243,24 +244,30 @@ export function DoseFlow({ locale }: { locale: string }) {
     };
   }, []);
 
-  // Mock detection generator: 30fps update
+  // Mock detection generator — throttled to 10 FPS (was 30, caused lag).
+  // Paused during AI inference and success animation so face-api / Vision
+  // runs uncontested on the main thread.
   useEffect(() => {
     if (!meta) return;
+    if (stepStatus === "checking" || stepStatus === "success") return;
     const interval = setInterval(() => {
       const elapsed = Date.now() - stepStartedAt;
       const frame = generateDetectionFrame(currentStep, elapsed, expectedPillCount);
       setDetectionFrame(frame);
-      // Append new log entries
       if (frame.log.length > 0) {
         setAggregatedLog((prev) => {
           const existingTimes = new Set(prev.map((e) => e.time));
           const newOnes = frame.log.filter((e) => !existingTimes.has(e.time));
+          if (newOnes.length === 0) return prev;
           return [...prev, ...newOnes].slice(-12);
         });
       }
-    }, 33);
+    }, 100); // 10 FPS — smooth without thrashing React
     return () => clearInterval(interval);
-  }, [currentStep, stepStartedAt, expectedPillCount, meta]);
+  }, [currentStep, stepStartedAt, expectedPillCount, meta, stepStatus]);
+
+  // Real face tracking — only active on face_id step. ~7 FPS, gentle on CPU.
+  const realFaceTracking = useFaceTracker(videoRef, currentStep === "face_id");
 
   // Mock rule monitor
   useEffect(() => {
@@ -274,19 +281,23 @@ export function DoseFlow({ locale }: { locale: string }) {
     return () => clearInterval(interval);
   }, [setRuleStatus]);
 
-  // Capture frame as blob (UN-mirrored for AI)
-  const captureFrame = useCallback((): Blob | null => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return null;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    ctx.drawImage(video, 0, 0);
-    let blob: Blob | null = null;
-    canvas.toBlob((b) => (blob = b), "image/jpeg", 0.85);
-    return blob;
+  // Capture frame as blob (UN-mirrored for AI).
+  // The CSS `transform: scaleX(-1)` on the <video> element only mirrors the
+  // visible pixels for selfie UX — `drawImage` reads the un-mirrored pixel
+  // buffer, which is exactly what AI models need (text on box reads correctly).
+  // DO NOT add a canvas mirror here or AI will get flipped frames.
+  const captureFrame = useCallback((): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas) return resolve(null);
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(null);
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.85);
+    });
   }, []);
 
   // Run AI check on current step
@@ -297,7 +308,7 @@ export function DoseFlow({ locale }: { locale: string }) {
 
     const frame =
       typeof document !== "undefined"
-        ? captureFrame() ?? new Blob([new Uint8Array(8)], { type: "image/jpeg" })
+        ? (await captureFrame()) ?? new Blob([new Uint8Array(8)], { type: "image/jpeg" })
         : new Blob([new Uint8Array(8)], { type: "image/jpeg" });
 
     try {
@@ -536,7 +547,8 @@ export function DoseFlow({ locale }: { locale: string }) {
               />
               <canvas ref={canvasRef} className="hidden" />
 
-              {/* Detection overlay */}
+              {/* Detection overlay — real face tracker on face_id step,
+                  mock visualization for everything else */}
               {detectionFrame && (
                 <DetectionOverlay
                   bboxes={detectionFrame.bboxes}
@@ -544,6 +556,8 @@ export function DoseFlow({ locale }: { locale: string }) {
                   scanProgress={detectionFrame.scanProgress}
                   isScanning={detectionFrame.phase === "scanning" || stepStatus === "checking"}
                   mirrored
+                  realTracking={realFaceTracking}
+                  step={currentStep}
                 />
               )}
 
@@ -711,27 +725,36 @@ function LongPressButton({
   label: string;
   onComplete: () => void;
   progress: number;
-  setProgress: (n: number) => void;
+  setProgress: React.Dispatch<React.SetStateAction<number>>;
   disabled?: boolean;
 }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const start = () => {
     if (disabled) return;
+    if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setProgress(Math.min(100, progress + 4));
+      // Functional update — must read latest state, not stale closure value
+      setProgress((p) => {
+        const next = Math.min(100, p + 4);
+        if (next >= 100 && intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return next;
+      });
     }, 50);
   };
   const stop = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (progress < 100) setProgress(0);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setProgress((p) => (p < 100 ? 0 : p));
   };
 
   useEffect(() => {
-    if (progress >= 100) {
-      onComplete();
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    }
+    if (progress >= 100) onComplete();
   }, [progress, onComplete]);
 
   return (

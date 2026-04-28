@@ -95,7 +95,7 @@ export function TodayScreen({ locale }: { locale: string }) {
   };
 
   return (
-    <main className="bg-aurora min-h-screen relative pb-24">
+    <main className="bg-aurora min-h-screen relative overflow-hidden">
       <div className="orb orb-brand w-72 h-72 -top-20 -right-20 animate-float-slow" />
       <div className="orb orb-coral w-64 h-64 top-96 -left-16 animate-float-slow" style={{ animationDelay: "3s" }} />
 

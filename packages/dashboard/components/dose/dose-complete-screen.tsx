@@ -40,7 +40,7 @@ export function DoseCompleteScreen({ locale }: { locale: string }) {
   if (!lastDose) return null;
 
   return (
-    <main className="bg-aurora min-h-screen relative flex flex-col">
+    <main className="bg-aurora min-h-screen relative overflow-hidden flex flex-col">
       <div className="orb orb-mint w-72 h-72 -top-20 -left-20 animate-float-slow" />
 
       <section className="relative z-10 flex-1 flex flex-col justify-center px-5 max-w-md mx-auto w-full">
