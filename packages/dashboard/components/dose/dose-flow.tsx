@@ -33,6 +33,7 @@ import { PhaseIndicator } from "@/components/dose/phase-indicator";
 import { DetectionOverlay } from "@/components/dose/detection-overlay";
 import { DetectionLog } from "@/components/dose/detection-log";
 import { LongPressButton } from "@/components/dose/long-press-button";
+import { StepRoadmap } from "@/components/dose/step-roadmap";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/use-t";
 import { useCamera } from "@/lib/use-camera";
@@ -323,8 +324,11 @@ export function DoseFlow({ locale }: { locale: string }) {
             <ActionButton runner={runner} t={t} currentStep={currentStep} />
           </div>
 
-          {/* RIGHT: detection log + drugs + rules */}
+          {/* RIGHT: step roadmap + detection log + CLIP + drugs + rules */}
           <aside className="flex flex-col gap-3 min-h-0">
+            {/* TOP: step-by-step roadmap so user always sees what's next */}
+            <StepRoadmap currentStep={currentStep} lang={lang} />
+
             <DetectionLog
               entries={aggregatedLog}
               confidence={detectionFrame?.liveConfidence ?? 0}
@@ -337,11 +341,30 @@ export function DoseFlow({ locale }: { locale: string }) {
                 <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 font-mono flex items-center gap-1.5">
                   <Brain size={11} />
                   CLIP brand recognition
-                  {clipBrand.status === "loading" && (
-                    <span className="text-amber-400">· loading 80MB…</span>
-                  )}
                 </p>
-                {clipBrand.ranked.length > 0 ? (
+                {clipBrand.status === "loading" && (
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center gap-2 text-amber-300">
+                      <span className="w-3 h-3 rounded-full border-2 border-amber-300 border-t-transparent animate-spin" />
+                      <span className="font-mono">Downloading CLIP model (~80 MB)…</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 italic">
+                      First load only · cached afterwards · first inference takes 5-10s
+                    </p>
+                  </div>
+                )}
+                {clipBrand.status === "error" && (
+                  <div className="text-xs text-red-400">
+                    <p>✗ Model download failed</p>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Check console · falling back to Mediapipe ObjectDetector
+                    </p>
+                  </div>
+                )}
+                {clipBrand.status !== "loading" && clipBrand.status !== "error" && clipBrand.ranked.length === 0 && (
+                  <p className="text-xs text-slate-500 italic">First frame analysis (5-10s)…</p>
+                )}
+                {clipBrand.ranked.length > 0 && (
                   <ul className="space-y-1">
                     {clipBrand.ranked.map((r, i) => (
                       <li
@@ -361,8 +384,6 @@ export function DoseFlow({ locale }: { locale: string }) {
                       </li>
                     ))}
                   </ul>
-                ) : (
-                  <p className="text-xs text-slate-500 italic">analyzing frame…</p>
                 )}
               </div>
             )}
