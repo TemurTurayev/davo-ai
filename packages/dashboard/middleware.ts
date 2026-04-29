@@ -20,7 +20,8 @@ export default createMiddleware({
 
 export const config = {
   matcher: [
-    // Match all paths except API, static files, internal Next.js
-    "/((?!api|_next|_vercel|.*\\..*).*)",
+    // Match all paths except API, static files, internal Next.js, AND `/ai/*`
+    // (which is rewritten in next.config.ts to the Pro M4 Pro AI proxy).
+    "/((?!api|_next|_vercel|ai/|.*\\..*).*)",
   ],
 };

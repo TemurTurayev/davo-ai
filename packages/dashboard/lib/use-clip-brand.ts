@@ -1,22 +1,21 @@
 "use client";
 
 /**
- * useClipBrand — zero-shot brand recognition via CLIP in the browser.
+ * useClipBrand — open-vocabulary brand recognition via OWLv2 on M4 Pro.
  *
- * Uses transformers.js v2 `pipeline("zero-shot-image-classification")` with
- * `Xenova/clip-vit-base-patch16` quantized (~80 MB, cached after first load).
+ * Renamed semantics (kept the function name to avoid touching dose-flow.tsx):
+ * earlier this hook ran CLIP-vit-base in the browser via transformers.js
+ * (~80 MB download, 5-10s first inference, model download often failed
+ * over Cloudflare Tunnel). Replaced with a server call to the OWLv2 model
+ * (google/owlv2-base-patch16-ensemble) running on M4 Pro Metal/MPS.
  *
- * Ranks the live frame against TB/demo drug labels:
- *   "a box of Trahisan throat lozenges"  ← demo
- *   "a box of Ascorutin vitamin tablets" ← demo
- *   "a box of Rifampicin antibiotic"
- *   "a book", "a phone", "an empty hand"
+ * Endpoint: /ai/owlv2/detect — Next.js rewrites this to localhost:7860/owlv2/*
+ * which is a tiny Air-side reverse proxy forwarding to 192.168.68.112:7860
+ * (Pro), where the actual model runs. ~250-400ms per inference vs 5-10s CLIP.
  *
- * Returns the top label + confidence. Used on show_box and pill_closeup
- * to discriminate prescribed medication from random objects — something
- * Mediapipe ObjectDetector (generic COCO) can't do.
- *
- * Pure client-side. No backend. WebGPU when available, WASM fallback.
+ * Open-vocabulary: takes natural-language prompts as text, returns bbox + score
+ * per prompt. Replaces both Mediapipe ObjectDetector (COCO 80-class) and
+ * browser CLIP — one model does location AND brand classification.
  */
 
 import { useEffect, useRef, useState, type RefObject } from "react";
@@ -27,10 +26,12 @@ const BRAND_PROMPTS: { id: string; text: string }[] = [
   { id: "rifampicin", text: "a box of Rifampicin antibiotic capsules" },
   { id: "isoniazid", text: "a box of Isoniazid tuberculosis pills" },
   { id: "blister", text: "a pharmaceutical blister pack of pills" },
+  { id: "glass", text: "a transparent glass with water" },
   { id: "book", text: "a book" },
   { id: "phone", text: "a cell phone" },
-  { id: "background", text: "an empty wall or background" },
 ];
+
+const PROMPT_STR = BRAND_PROMPTS.map((p) => p.text).join("|");
 
 export interface ClipResult {
   topId: string;
@@ -38,6 +39,8 @@ export interface ClipResult {
   topConfidence: number;
   ranked: { id: string; confidence: number }[];
   status: "loading" | "ready" | "running" | "error";
+  /** Set when OWLv2 returns a bbox — used by detection-overlay fusion */
+  topBbox?: [number, number, number, number];
 }
 
 const EMPTY: ClipResult = {
@@ -48,42 +51,25 @@ const EMPTY: ClipResult = {
   status: "loading",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let classifierPromise: Promise<any> | null = null;
-
-async function getClassifier() {
-  if (classifierPromise) return classifierPromise;
-  classifierPromise = (async () => {
-    const { pipeline, env } = await import("@xenova/transformers");
-    env.allowLocalModels = false;
-    return pipeline(
-      "zero-shot-image-classification",
-      "Xenova/clip-vit-base-patch16",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { quantized: true } as any,
-    );
-  })();
-  return classifierPromise;
-}
-
-function canvasFromVideo(video: HTMLVideoElement): string {
-  const c = document.createElement("canvas");
-  c.width = 224;
-  c.height = 224;
-  const ctx = c.getContext("2d")!;
-  // Center-crop to square then resize to CLIP's 224×224
-  const min = Math.min(video.videoWidth, video.videoHeight);
-  const sx = (video.videoWidth - min) / 2;
-  const sy = (video.videoHeight - min) / 2;
-  ctx.drawImage(video, sx, sy, min, min, 0, 0, 224, 224);
-  return c.toDataURL("image/jpeg", 0.9);
+function canvasFromVideo(video: HTMLVideoElement): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const c = document.createElement("canvas");
+    // OWLv2 input is 960×960; we send center-cropped 720×720 JPEG, server resizes.
+    const min = Math.min(video.videoWidth, video.videoHeight);
+    c.width = c.height = Math.min(720, min);
+    const ctx = c.getContext("2d")!;
+    const sx = (video.videoWidth - min) / 2;
+    const sy = (video.videoHeight - min) / 2;
+    ctx.drawImage(video, sx, sy, min, min, 0, 0, c.width, c.height);
+    c.toBlob((b) => resolve(b), "image/jpeg", 0.85);
+  });
 }
 
 export function useClipBrand(
   videoRef: RefObject<HTMLVideoElement | null>,
   enabled: boolean,
 ): ClipResult {
-  const [result, setResult] = useState<ClipResult>(EMPTY);
+  const [result, setResult] = useState<ClipResult>({ ...EMPTY, status: "ready" });
   const lastRunRef = useRef(0);
 
   useEffect(() => {
@@ -92,50 +78,64 @@ export function useClipBrand(
       return;
     }
     let cancelled = false;
-    const labels = BRAND_PROMPTS.map((p) => p.text);
 
     (async () => {
-      let classifier;
-      try {
-        classifier = await getClassifier();
-        if (cancelled) return;
-        setResult((r) => ({ ...r, status: "ready" }));
-      } catch (err) {
-        console.error("CLIP load failed:", err);
-        if (!cancelled) setResult({ ...EMPTY, status: "error" });
-        return;
-      }
-
       while (!cancelled) {
         const video = videoRef.current;
         const now = Date.now();
         if (
           video &&
           video.videoWidth > 0 &&
-          now - lastRunRef.current > 1500 // ~1 inference / 1.5s, CLIP is heavy
+          now - lastRunRef.current > 1000 // 1s rate limit (OWLv2 is ~250-400ms)
         ) {
           lastRunRef.current = now;
           try {
-            const dataUrl = canvasFromVideo(video);
-            const out = await classifier(dataUrl, labels);
+            const blob = await canvasFromVideo(video);
+            if (!blob) continue;
+            const fd = new FormData();
+            fd.append("image", blob, "frame.jpg");
+            fd.append("prompts", PROMPT_STR);
+            setResult((r) => ({ ...r, status: "running" }));
+            const res = await fetch("/ai/owlv2/detect", { method: "POST", body: fd });
             if (cancelled) break;
-            // out: [{score, label}, ...] sorted by score desc
-            const ranked = (out as { score: number; label: string }[])
-              .map((r) => {
-                const match = BRAND_PROMPTS.find((p) => p.text === r.label);
-                return { id: match?.id ?? r.label, confidence: r.score };
+            if (!res.ok) {
+              setResult({ ...EMPTY, status: "error" });
+              await new Promise((r) => setTimeout(r, 2000));
+              continue;
+            }
+            const data: {
+              detections: { label: string; confidence: number; bbox: [number, number, number, number] }[];
+              inferenceMs: number;
+            } = await res.json();
+
+            if (data.detections.length === 0) {
+              setResult({ ...EMPTY, status: "ready" });
+              continue;
+            }
+            // Map prompt text → our id
+            const ranked = data.detections
+              .map((d) => {
+                const match = BRAND_PROMPTS.find((p) => p.text === d.label);
+                return {
+                  id: match?.id ?? "unknown",
+                  confidence: d.confidence,
+                  bbox: d.bbox,
+                };
               })
-              .slice(0, 3);
+              .sort((a, b) => b.confidence - a.confidence);
             const top = ranked[0];
             setResult({
               topId: top.id,
               topLabel: BRAND_PROMPTS.find((p) => p.id === top.id)?.text ?? top.id,
               topConfidence: top.confidence,
-              ranked,
+              topBbox: top.bbox,
+              ranked: ranked.slice(0, 3).map((r) => ({ id: r.id, confidence: r.confidence })),
               status: "ready",
             });
           } catch (err) {
-            console.error("CLIP infer error:", err);
+            console.error("OWLv2 fetch error:", err);
+            if (!cancelled) setResult((r) => ({ ...r, status: "error" }));
+            await new Promise((r) => setTimeout(r, 2000));
           }
         }
         await new Promise((r) => setTimeout(r, 200));
