@@ -107,3 +107,4 @@ assets/pitch/generated/
 telegram-bot-api-data/
 data/tb_pills_yolo/
 .synth_*
+infra/yolo-weights/*.pt

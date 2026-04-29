@@ -39,6 +39,7 @@ import { useCamera } from "@/lib/use-camera";
 import { useFaceTracker } from "@/lib/use-face-tracker";
 import { useHandTracker } from "@/lib/use-hand-tracker";
 import { useObjectDetector } from "@/lib/use-object-detector";
+import { useClipBrand } from "@/lib/use-clip-brand";
 import { useFrameAnalysis } from "@/lib/use-frame-analysis";
 import { useRealRulesMonitor } from "@/lib/use-real-rules-monitor";
 import { useMockDetections } from "@/lib/use-mock-detections";
@@ -75,6 +76,10 @@ export function DoseFlow({ locale }: { locale: string }) {
     currentStep === "open_box" ||
     currentStep === "show_glass";
   const objectDetection = useObjectDetector(camera.videoRef, objectsRelevant);
+  // CLIP zero-shot brand recognition — only on box/pill steps where it matters.
+  // Distinguishes Trahisan/Ascorutin from generic 'book'/'phone' that COCO returns.
+  const clipRelevant = currentStep === "show_box" || currentStep === "pill_closeup";
+  const clipBrand = useClipBrand(camera.videoRef, clipRelevant);
   // Frame analysis (brightness + motion) always running for rules
   const frameAnalysis = useFrameAnalysis(camera.videoRef, true);
 
@@ -249,6 +254,68 @@ export function DoseFlow({ locale }: { locale: string }) {
                   {meta.modelLabel}
                 </div>
               </div>
+
+              {/* BIG VERIFIED overlay — fills camera with bold check + next-step hint
+                  so the user UNAMBIGUOUSLY knows the step passed and what comes next */}
+              {runner.stepStatus === "success" && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.6 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-emerald-500/85 backdrop-blur-sm pointer-events-none"
+                >
+                  <motion.div
+                    initial={{ scale: 0, rotate: -12 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 200, delay: 0.05 }}
+                    className="w-28 h-28 rounded-full bg-white shadow-2xl flex items-center justify-center mb-4"
+                  >
+                    <Check size={64} className="text-emerald-500" strokeWidth={4} />
+                  </motion.div>
+                  <p className="font-heading font-extrabold text-3xl text-white mb-1 tracking-tight">
+                    {t("Tasdiqlandi", "Подтверждено", "Verified")}
+                  </p>
+                  {(() => {
+                    const idx = DOSE_STEP_ORDER.indexOf(currentStep);
+                    const next = DOSE_STEP_ORDER[idx + 1];
+                    const nextMeta = next && next !== "completed" ? STEP_META[next] : null;
+                    if (nextMeta) {
+                      return (
+                        <p className="text-white/95 text-sm font-medium px-4 text-center">
+                          →{" "}
+                          {nextMeta[`title${lang === "uz" ? "Uz" : lang === "ru" ? "Ru" : "En"}` as "titleUz" | "titleRu" | "titleEn"]}
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className="text-white/95 text-sm font-medium px-4 text-center">
+                        {t("Yakunlanmoqda…", "Завершаем…", "Finalizing…")}
+                      </p>
+                    );
+                  })()}
+                </motion.div>
+              )}
+
+              {/* CLIP brand recognition banner — only on box/pill steps */}
+              {clipRelevant && clipBrand.status !== "loading" && clipBrand.topId && (
+                <div className="absolute bottom-3 left-3 pointer-events-none">
+                  <div
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg backdrop-blur text-white text-xs font-bold font-mono flex items-center gap-2 shadow-lg",
+                      clipBrand.topId === "trahisan" || clipBrand.topId === "ascorutin"
+                        ? "bg-emerald-600/90"
+                        : clipBrand.topConfidence > 0.5
+                        ? "bg-amber-500/90"
+                        : "bg-slate-700/90",
+                    )}
+                  >
+                    <Brain size={13} />
+                    <span>CLIP:</span>
+                    <span className="uppercase">{clipBrand.topId}</span>
+                    <span className="opacity-80">{Math.round(clipBrand.topConfidence * 100)}%</span>
+                  </div>
+                </div>
+              )}
             </section>
 
             <PhaseIndicator currentStep={currentStep} locale={locale} />
@@ -263,6 +330,42 @@ export function DoseFlow({ locale }: { locale: string }) {
               confidence={detectionFrame?.liveConfidence ?? 0}
               modelName={meta.modelLabel}
             />
+
+            {/* CLIP zero-shot ranked predictions — only on box/pill steps */}
+            {clipRelevant && (
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl p-3">
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 font-mono flex items-center gap-1.5">
+                  <Brain size={11} />
+                  CLIP brand recognition
+                  {clipBrand.status === "loading" && (
+                    <span className="text-amber-400">· loading 80MB…</span>
+                  )}
+                </p>
+                {clipBrand.ranked.length > 0 ? (
+                  <ul className="space-y-1">
+                    {clipBrand.ranked.map((r, i) => (
+                      <li
+                        key={r.id}
+                        className={cn(
+                          "flex items-center gap-2 text-xs font-mono",
+                          i === 0 && (r.id === "trahisan" || r.id === "ascorutin")
+                            ? "text-emerald-400"
+                            : i === 0
+                            ? "text-amber-300"
+                            : "text-slate-400",
+                        )}
+                      >
+                        <span className="w-3">{i + 1}.</span>
+                        <span className="flex-1 truncate">{r.id}</span>
+                        <span className="tabular">{Math.round(r.confidence * 100)}%</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-500 italic">analyzing frame…</p>
+                )}
+              </div>
+            )}
 
             {(currentStep === "show_pills" || currentStep === "show_box") && (
               <div className="bg-slate-900 border border-slate-700 rounded-2xl p-3">

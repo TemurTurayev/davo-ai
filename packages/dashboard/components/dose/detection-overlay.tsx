@@ -120,7 +120,7 @@ function DetectionOverlayInner({
       )}
 
       <AnimatePresence>
-        {showFace && <RealFaceMesh key="face-mesh" tracking={realTracking!} />}
+        {/* Face mesh dots removed per user feedback — only bbox + label follows the face */}
         {showFace && <RealFaceBBox key="face-bbox" tracking={realTracking!} mirrored={mirrored} />}
         {showHands && handTracking!.hands.map((h, i) => (
           <RealHandLayer key={`hand-${i}`} hand={h} mirrored={mirrored} index={i} />
@@ -334,8 +334,8 @@ function RealHandLayer({
   ];
 
   return (
-    <motion.g initial={{ opacity: 0 }} animate={{ opacity: 0.9 }} exit={{ opacity: 0 }}>
-      {/* Bounding box */}
+    <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      {/* Bounding box — beefier (was 4px stroke, now 6) */}
       <rect
         x={px}
         y={py}
@@ -343,10 +343,11 @@ function RealHandLayer({
         height={ph}
         fill="none"
         stroke={stroke}
-        strokeWidth={4}
-        rx={12}
+        strokeWidth={6}
+        rx={14}
+        filter="drop-shadow(0 0 8px rgba(167, 139, 250, 0.6))"
       />
-      {/* Skeleton lines */}
+      {/* Skeleton lines — thicker + full opacity (was 2px @ 70%, now 4px @ 100%) */}
       {CONNECTIONS.map(([a, b], i) => (
         <line
           key={i}
@@ -355,13 +356,23 @@ function RealHandLayer({
           x2={landmarks[b].x * W}
           y2={landmarks[b].y * H}
           stroke={stroke}
-          strokeWidth={2}
-          strokeOpacity={0.7}
+          strokeWidth={4}
+          strokeOpacity={1}
+          strokeLinecap="round"
         />
       ))}
-      {/* Joints */}
+      {/* Joints — bigger (wrist 5→8, others 3→5) */}
       {landmarks.map((p, i) => (
-        <circle key={i} cx={p.x * W} cy={p.y * H} r={i === 0 ? 5 : 3} fill={stroke} opacity={0.95} />
+        <circle
+          key={i}
+          cx={p.x * W}
+          cy={p.y * H}
+          r={i === 0 ? 8 : 5}
+          fill={stroke}
+          stroke="white"
+          strokeWidth={1.5}
+          opacity={1}
+        />
       ))}
       {/* Label */}
       <g transform={mirrored ? `translate(${W}, 0) scale(-1, 1)` : ""}>
