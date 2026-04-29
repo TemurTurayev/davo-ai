@@ -24,7 +24,7 @@ import {
   LogOut,
   Lock,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 import { useTBControlStore } from "@/lib/store";
 import { TBControlLogo } from "@/components/brand/tb-control-logo";
@@ -209,9 +209,10 @@ export function ProfileScreen({ locale }: { locale: string }) {
               {(["uz", "ru", "en"] as const).map((lng) => {
                 const active = lng === locale;
                 return (
-                  <a
+                  <Link
                     key={lng}
-                    href={`/${lng}/profile`}
+                    href="/profile"
+                    locale={lng}
                     className={`py-3 rounded-xl flex flex-col items-center gap-1 text-xs font-bold transition-all ${
                       active
                         ? "bg-[var(--color-brand)] text-white shadow-md"
@@ -220,7 +221,7 @@ export function ProfileScreen({ locale }: { locale: string }) {
                   >
                     <span className="text-base">{lng.toUpperCase()}</span>
                     <span className="opacity-90">{localeNames[lng]?.native}</span>
-                  </a>
+                  </Link>
                 );
               })}
             </div>
