@@ -62,19 +62,17 @@ export function DoseFlow({ locale }: { locale: string }) {
   // face-api runs whenever camera is up so the rules monitor has a real signal
   // (not just on face_id step). Only the OVERLAY uses it on face_id specifically.
   const realFaceTracking = useFaceTracker(camera.videoRef, true);
-  // Mediapipe Hands runs from show_pills step onward (when patient should be holding pills).
+  // Mediapipe Hands runs from pill_closeup onward (when patient holds pills/glass).
   const handsRelevant =
-    currentStep === "show_pills" ||
     currentStep === "pill_closeup" ||
     currentStep === "show_glass" ||
     currentStep === "swallow";
   const realHandTracking = useHandTracker(camera.videoRef, handsRelevant);
   // Object detector — active on box/glass steps where patient should hold an object.
   // Detects COCO classes (cup/bottle/cell phone/book) — proxy for "object present".
-  // For real brand recognition (Ascorutin/Trahisan) we still need server YOLO.
+  // For real brand recognition CLIP overrides the label below.
   const objectsRelevant =
     currentStep === "show_box" ||
-    currentStep === "open_box" ||
     currentStep === "show_glass";
   const objectDetection = useObjectDetector(camera.videoRef, objectsRelevant);
   // CLIP zero-shot brand recognition — only on box/pill steps where it matters.
@@ -206,13 +204,32 @@ export function DoseFlow({ locale }: { locale: string }) {
               />
               <canvas ref={camera.canvasRef} className="hidden" />
 
+              {/* Fuse Mediapipe ObjectDetector bbox with CLIP brand label when CLIP is
+                  confident (>50% on a known drug class). User sees the box bbox but
+                  labeled with the actual brand ("TRAHISAN 87%") instead of "book 56%". */}
               <DetectionOverlay
                 scanProgress={detectionFrame?.scanProgress ?? 0}
                 isScanning={detectionFrame?.phase === "scanning" || runner.stepStatus === "checking"}
                 mirrored
                 realTracking={realFaceTracking}
                 handTracking={realHandTracking}
-                objectDetection={objectDetection}
+                objectDetection={
+                  clipRelevant &&
+                  clipBrand.topConfidence > 0.5 &&
+                  (clipBrand.topId === "trahisan" || clipBrand.topId === "ascorutin") &&
+                  objectDetection.objects.length > 0
+                    ? {
+                        ...objectDetection,
+                        objects: [
+                          {
+                            ...objectDetection.objects[0],
+                            label: clipBrand.topId.toUpperCase(),
+                            confidence: clipBrand.topConfidence,
+                          },
+                        ],
+                      }
+                    : objectDetection
+                }
                 step={currentStep}
               />
 
@@ -388,7 +405,7 @@ export function DoseFlow({ locale }: { locale: string }) {
               </div>
             )}
 
-            {(currentStep === "show_pills" || currentStep === "show_box") && (
+            {(currentStep === "show_box" || currentStep === "pill_closeup") && (
               <div className="bg-slate-900 border border-slate-700 rounded-2xl p-3">
                 <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 font-mono">
                   {t("Bugungi dozalar", "Сегодняшние дозы", "Today's doses")}

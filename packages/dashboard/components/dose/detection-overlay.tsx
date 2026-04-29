@@ -42,7 +42,6 @@ const W = 1000;
 const H = 1000;
 
 const HAND_RELATED_STEPS = new Set<DoseFlowStep>([
-  "show_pills",
   "pill_closeup",
   "swallow",
   "mouth_check",
@@ -50,7 +49,6 @@ const HAND_RELATED_STEPS = new Set<DoseFlowStep>([
 
 const OBJECT_RELATED_STEPS = new Set<DoseFlowStep>([
   "show_box",
-  "open_box",
   "show_glass",
 ]);
 

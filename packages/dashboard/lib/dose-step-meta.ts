@@ -120,8 +120,14 @@ export const STEP_META: Record<DoseFlowStep, StepUI | null> = {
   },
 };
 
+// Simplified flow per user feedback (2026-04-29): removed "open_box" and
+// "show_pills" — redundant with show_box (we already see the box) and
+// pill_closeup (we already see the pills before swallowing). 8 → 6 steps.
+//
+// Phase grouping in PhaseIndicator stays: Identify (face+box) ·
+// Verify (pill_closeup + glass) · Ingest (swallow + mouth_check).
 export const DOSE_STEP_ORDER: DoseFlowStep[] = [
   "face_id", "show_box",
-  "open_box", "show_pills", "pill_closeup", "show_glass",
+  "pill_closeup", "show_glass",
   "swallow", "mouth_check", "completed",
 ];

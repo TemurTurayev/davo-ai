@@ -28,11 +28,10 @@ import {
 import { getWebApp } from "@/lib/telegram";
 import type { Lang } from "@/lib/use-t";
 
+// Simplified flow per user feedback (2026-04-29) — open_box + show_pills removed
 const STEP_ORDER: DoseFlowStep[] = [
   "face_id",
   "show_box",
-  "open_box",
-  "show_pills",
   "pill_closeup",
   "show_glass",
   "swallow",
@@ -157,13 +156,13 @@ export function useDoseStepRunner(args: {
             "Looks like a different person — try again",
           ));
         }
-      } else if (currentStep === "show_box" || currentStep === "show_pills") {
+      } else if (currentStep === "show_box") {
         const blob = (await captureFrame()) ?? new Blob([new Uint8Array(8)], { type: "image/jpeg" });
         const r = await detectPills(blob);
         confidence = r.detections.length > 0 ? r.detections[0].confidence : 0;
         const pillCount = r.detections.length;
         setAiVerdict((v) => ({ ...v, pillCount }));
-        success = pillCount >= (currentStep === "show_pills" ? expectedDrugs.length : 1);
+        success = pillCount >= 1;
         if (!success) {
           setRetryHint(t(
             "Tabletkalar aniq ko'rinmayapti — yaqinlashtiring",
