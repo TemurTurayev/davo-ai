@@ -186,7 +186,10 @@ export function DoseFlow({ locale }: { locale: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-3 flex-1 min-h-0">
           {/* LEFT: Camera + phase + action button */}
           <div className="flex flex-col gap-3 min-h-0">
-            <section className="relative rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 aspect-square mx-auto w-full max-w-[640px]">
+            <section
+              className="relative rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 mx-auto w-full max-w-[560px] aspect-[4/3]"
+              style={{ maxHeight: "min(60vh, 480px)" }}
+            >
               <video
                 ref={camera.videoRef}
                 autoPlay
