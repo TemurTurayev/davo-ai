@@ -24,7 +24,7 @@ import {
   LogOut,
   Lock,
 } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+// Locale picker uses <a> for full-page reload — see comment in language-switcher.tsx
 
 import { useTBControlStore } from "@/lib/store";
 import { TBControlLogo } from "@/components/brand/tb-control-logo";
@@ -208,11 +208,12 @@ export function ProfileScreen({ locale }: { locale: string }) {
             <div className="grid grid-cols-3 gap-2">
               {(["uz", "ru", "en"] as const).map((lng) => {
                 const active = lng === locale;
+                // uz default has no prefix (as-needed); ru/en get prefix
+                const href = lng === "uz" ? "/profile" : `/${lng}/profile`;
                 return (
-                  <Link
+                  <a
                     key={lng}
-                    href="/profile"
-                    locale={lng}
+                    href={href}
                     className={`py-3 rounded-xl flex flex-col items-center gap-1 text-xs font-bold transition-all ${
                       active
                         ? "bg-[var(--color-brand)] text-white shadow-md"
@@ -221,7 +222,7 @@ export function ProfileScreen({ locale }: { locale: string }) {
                   >
                     <span className="text-base">{lng.toUpperCase()}</span>
                     <span className="opacity-90">{localeNames[lng]?.native}</span>
-                  </Link>
+                  </a>
                 );
               })}
             </div>

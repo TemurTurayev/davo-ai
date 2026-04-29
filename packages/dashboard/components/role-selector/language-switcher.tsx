@@ -1,34 +1,40 @@
 "use client";
 
-import { Link, usePathname } from "@/i18n/navigation";
-import type { Locale } from "@/i18n/config";
+import { usePathname } from "next/navigation";
 
-const labels: Record<Locale, string> = { uz: "UZ", ru: "RU", en: "EN" };
+const labels = { uz: "UZ", ru: "RU", en: "EN" } as const;
 
 /**
- * LanguageSwitcher — uses next-intl's locale-aware Link.
+ * LanguageSwitcher — uses raw <a> for FULL PAGE NAVIGATION on locale change.
  *
- * `usePathname()` from next-intl returns the path WITHOUT the locale prefix
- * (so "/en/today" appears as "/today"). Passing the same path to <Link locale="X">
- * generates the correct target URL per `as-needed` policy:
- *   locale="uz" → "/today"     (default, no prefix)
- *   locale="ru" → "/ru/today"
- *   locale="en" → "/en/today"
+ * Why not next-intl <Link> or next/link? Both do client-side routing which
+ * persists React's locale context + RSC prefetch cache. Clicking UZ from /en
+ * could render cached EN content. Locale switch MUST tear down the React tree
+ * so next-intl rebuilds with the new locale dictionary.
  *
- * This is more robust than the manual string-stripping we used before — it
- * handles edge cases (cookie sync, prefetch invalidation, route groups) that
- * raw `next/link` doesn't.
+ * Path construction (per `localePrefix: as-needed`):
+ *   /en/today + UZ → /today    (uz default has no prefix)
+ *   /today    + RU → /ru/today
+ *   /ru/today + EN → /en/today
  */
 export function LanguageSwitcher({ current }: { current: string }) {
   const pathname = usePathname();
 
+  function pathFor(target: "uz" | "ru" | "en"): string {
+    const segments = pathname.split("/").filter(Boolean);
+    const head = segments[0];
+    const isLocaleHead = head === "ru" || head === "en" || head === "uz";
+    const tail = (isLocaleHead ? segments.slice(1) : segments).join("/");
+    if (target === "uz") return tail ? `/${tail}` : "/";
+    return tail ? `/${target}/${tail}` : `/${target}`;
+  }
+
   return (
     <div className="flex items-center gap-0.5 bg-[var(--color-mist)] rounded-full p-0.5 text-xs font-semibold shadow-sm">
       {(["uz", "ru", "en"] as const).map((l) => (
-        <Link
+        <a
           key={l}
-          href={pathname}
-          locale={l}
+          href={pathFor(l)}
           className={`px-2.5 py-1 rounded-full transition-colors ${
             l === current
               ? "bg-white text-[var(--color-ink)] shadow-sm"
@@ -36,7 +42,7 @@ export function LanguageSwitcher({ current }: { current: string }) {
           }`}
         >
           {labels[l]}
-        </Link>
+        </a>
       ))}
     </div>
   );
