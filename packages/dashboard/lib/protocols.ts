@@ -36,6 +36,7 @@ export const DRUG_LABELS: Record<DrugCode, { uz: string; ru: string; en: string;
   pretomanid:    { uz: "Pretomanid",    ru: "Претоманид",    en: "Pretomanid",    abbr: "Pa",  color: "#7C3AED" },
   cycloserine:   { uz: "Sikloserin",    ru: "Циклосерин",    en: "Cycloserine",   abbr: "Cs",  color: "#0E7490" },
   ascorutin_demo:{ uz: "Askorutin (demo)", ru: "Аскорутин (демо)", en: "Ascorutin (demo)", abbr: "Asc", color: "#84CC16" },
+  trahisan_demo: { uz: "Trahisan (demo)",  ru: "Трахисан (демо)",  en: "Trahisan (demo)",  abbr: "Trh", color: "#0EA5E9" },
 };
 
 // ────────────────────────────────────────────────────────────────────────────

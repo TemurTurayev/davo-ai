@@ -35,8 +35,16 @@ export function useCamera(enabled = true): UseCameraResult {
 
     (async () => {
       try {
+        // Request highest resolution the webcam can deliver — better source frames
+        // help every downstream model (face-api, Mediapipe Hands, server YOLO).
+        // Modern webcams support 1080p; we accept whatever the device offers up to 4K.
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: {
+            facingMode: "user",
+            width: { ideal: 1920, max: 3840 },
+            height: { ideal: 1080, max: 2160 },
+            frameRate: { ideal: 30, max: 60 },
+          },
           audio: false,
         });
         if (!mounted) {
@@ -77,7 +85,9 @@ export function useCamera(enabled = true): UseCameraResult {
       const ctx = canvas.getContext("2d");
       if (!ctx) return resolve(null);
       ctx.drawImage(video, 0, 0);
-      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.85);
+      // Quality 0.95 — near-lossless JPEG. Better source for backend YOLO/Vision LLM.
+      // Trade-off: ~3× file size vs 0.85, still <2 MB at 1080p, fine for upload.
+      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.95);
     });
   }, []);
 

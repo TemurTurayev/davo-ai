@@ -38,6 +38,7 @@ import { useT } from "@/lib/use-t";
 import { useCamera } from "@/lib/use-camera";
 import { useFaceTracker } from "@/lib/use-face-tracker";
 import { useHandTracker } from "@/lib/use-hand-tracker";
+import { useObjectDetector } from "@/lib/use-object-detector";
 import { useFrameAnalysis } from "@/lib/use-frame-analysis";
 import { useRealRulesMonitor } from "@/lib/use-real-rules-monitor";
 import { useMockDetections } from "@/lib/use-mock-detections";
@@ -66,6 +67,14 @@ export function DoseFlow({ locale }: { locale: string }) {
     currentStep === "show_glass" ||
     currentStep === "swallow";
   const realHandTracking = useHandTracker(camera.videoRef, handsRelevant);
+  // Object detector — active on box/glass steps where patient should hold an object.
+  // Detects COCO classes (cup/bottle/cell phone/book) — proxy for "object present".
+  // For real brand recognition (Ascorutin/Trahisan) we still need server YOLO.
+  const objectsRelevant =
+    currentStep === "show_box" ||
+    currentStep === "open_box" ||
+    currentStep === "show_glass";
+  const objectDetection = useObjectDetector(camera.videoRef, objectsRelevant);
   // Frame analysis (brightness + motion) always running for rules
   const frameAnalysis = useFrameAnalysis(camera.videoRef, true);
 
@@ -194,6 +203,7 @@ export function DoseFlow({ locale }: { locale: string }) {
                 mirrored
                 realTracking={realFaceTracking}
                 handTracking={realHandTracking}
+                objectDetection={objectDetection}
                 step={currentStep}
               />
 
@@ -262,6 +272,14 @@ export function DoseFlow({ locale }: { locale: string }) {
                       src="/pill-references/ascorutin-n50/box-front-lekhim.jpg"
                       alt="Ascorutin reference"
                       className="w-20 h-20 object-cover rounded-lg shrink-0 border border-slate-600"
+                    />
+                  )}
+                  {prescription.doses[0].drugs.some((d) => d.drugCode === "trahisan_demo") && (
+                    <img
+                      src="/pill-references/trahisan/box-front.jpg"
+                      alt="Trahisan reference"
+                      className="w-20 h-20 object-cover rounded-lg shrink-0 border border-slate-600"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   )}
                   <div className="flex-1 min-w-0 flex flex-wrap gap-1.5 content-start">

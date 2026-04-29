@@ -27,7 +27,8 @@ export type DrugCode =
   | "delamanid"
   | "pretomanid"
   | "cycloserine"
-  | "ascorutin_demo";   // safe-to-swallow demo placeholder for hackathon presentation
+  | "ascorutin_demo"   // safe-to-swallow demo placeholder for hackathon presentation
+  | "trahisan_demo";   // alternative demo pill (throat lozenges, Engelhard)
 
 export interface PrescribedDrug {
   drugCode: DrugCode;

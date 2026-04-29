@@ -24,7 +24,7 @@ export function AwaitingPrescriptionClient({ locale }: { locale: string }) {
   const t = (uz: string, ru: string, en: string) =>
     lang === "uz" ? uz : lang === "ru" ? ru : en;
 
-  const useDemoPrescription = () => {
+  const useDemoPrescription = (drugCode: "ascorutin_demo" | "trahisan_demo") => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 14); // mid-treatment for demo
     const base = buildPrescription({
@@ -34,17 +34,16 @@ export function AwaitingPrescriptionClient({ locale }: { locale: string }) {
       startDate,
       doctorName: t("Dr. Tursunov A.X.", "Др. Турсунов А.Х.", "Dr. A.Kh. Tursunov"),
     });
-    // Override with safe-to-swallow demo pill (Ascorutin) for hackathon presentation.
+    // Override with safe-to-swallow demo pill for hackathon presentation.
     // Real treatment plan would use rifampicin/isoniazid/etc. — but we can't ask
     // the demo participant to swallow real TB drugs on stage.
+    const dosageMg = drugCode === "ascorutin_demo" ? 50 : 1;
     const prescription = {
       ...base,
       doses: [
         {
           ...base.doses[0],
-          drugs: [
-            { drugCode: "ascorutin_demo" as const, dosageMg: 50, count: 1 },
-          ],
+          drugs: [{ drugCode, dosageMg, count: 1 }],
         },
       ],
     };
@@ -95,7 +94,7 @@ export function AwaitingPrescriptionClient({ locale }: { locale: string }) {
           </div>
         </GlassCard>
 
-        {/* Demo button — for hackathon testing */}
+        {/* Demo buttons — for hackathon testing */}
         <GlassCard variant="accent" className="p-5 text-white">
           <div className="flex items-start gap-3 mb-3">
             <FlaskConical size={20} className="mt-0.5 shrink-0" />
@@ -105,21 +104,29 @@ export function AwaitingPrescriptionClient({ locale }: { locale: string }) {
               </p>
               <p className="text-xs opacity-90">
                 {t(
-                  "Hackathon namoyishi uchun: standart DS-TB rejimini avtomatik yarating.",
-                  "Для демонстрации хакатона: автоматически создать стандартный режим DS-TB.",
-                  "For hackathon demo: auto-create a standard DS-TB regimen.",
+                  "Xavfsiz vitamin/pastilkalardan birini tanlang. Yutish va kameraga ko'rsatishda xavfsiz.",
+                  "Выберите безопасный витамин или пастилку. Безопасно глотать и показывать на демо.",
+                  "Pick a safe vitamin or lozenge. Safe to swallow and show on demo.",
                 )}
               </p>
             </div>
           </div>
-          <Button
-            onClick={useDemoPrescription}
-            variant="secondary"
-            block
-            className="bg-white text-[var(--color-accent)] hover:bg-white/90"
-          >
-            {t("Demo tayinlashni ishlatish", "Использовать демо-назначение", "Use demo prescription")}
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => useDemoPrescription("ascorutin_demo")}
+              variant="secondary"
+              className="bg-white text-[var(--color-accent)] hover:bg-white/90"
+            >
+              Аскорутин
+            </Button>
+            <Button
+              onClick={() => useDemoPrescription("trahisan_demo")}
+              variant="secondary"
+              className="bg-white text-[var(--color-accent)] hover:bg-white/90"
+            >
+              Трахисан
+            </Button>
+          </div>
         </GlassCard>
       </section>
     </main>

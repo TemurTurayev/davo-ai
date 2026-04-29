@@ -20,6 +20,7 @@ import { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { FaceTracking } from "@/lib/use-face-tracker";
 import type { HandTracking } from "@/lib/use-hand-tracker";
+import type { ObjectDetection } from "@/lib/use-object-detector";
 import type { DoseFlowStep } from "@/lib/store";
 
 interface DetectionOverlayProps {
@@ -31,6 +32,8 @@ interface DetectionOverlayProps {
   realTracking?: FaceTracking;
   /** Real Mediapipe Hands detection (used on hand-related steps) */
   handTracking?: HandTracking;
+  /** Real Mediapipe ObjectDetector (used on box/glass steps) */
+  objectDetection?: ObjectDetection;
   /** Current step — drives which detection layer to render */
   step?: DoseFlowStep;
 }
@@ -45,6 +48,12 @@ const HAND_RELATED_STEPS = new Set<DoseFlowStep>([
   "mouth_check",
 ]);
 
+const OBJECT_RELATED_STEPS = new Set<DoseFlowStep>([
+  "show_box",
+  "open_box",
+  "show_glass",
+]);
+
 export const DetectionOverlay = memo(DetectionOverlayInner);
 
 function DetectionOverlayInner({
@@ -53,6 +62,7 @@ function DetectionOverlayInner({
   mirrored = true,
   realTracking,
   handTracking,
+  objectDetection,
   step,
 }: DetectionOverlayProps) {
   const showFace = step === "face_id" && realTracking?.detected;
@@ -61,6 +71,11 @@ function DetectionOverlayInner({
     HAND_RELATED_STEPS.has(step) &&
     handTracking?.detected &&
     handTracking.hands.length > 0;
+  const showObjects =
+    step !== undefined &&
+    OBJECT_RELATED_STEPS.has(step) &&
+    objectDetection?.detected &&
+    objectDetection.objects.length > 0;
 
   return (
     <svg
@@ -109,6 +124,9 @@ function DetectionOverlayInner({
         {showFace && <RealFaceBBox key="face-bbox" tracking={realTracking!} mirrored={mirrored} />}
         {showHands && handTracking!.hands.map((h, i) => (
           <RealHandLayer key={`hand-${i}`} hand={h} mirrored={mirrored} index={i} />
+        ))}
+        {showObjects && objectDetection!.objects.slice(0, 3).map((obj, i) => (
+          <RealObjectBBox key={`obj-${i}`} object={obj} mirrored={mirrored} index={i} />
         ))}
       </AnimatePresence>
     </svg>
@@ -198,6 +216,80 @@ function RealFaceBBox({ tracking, mirrored }: { tracking: FaceTracking; mirrored
           x={(mirrored ? W - px - 12 : px + labelW - 12)}
           y={py - 14}
           fontSize={14}
+          fontFamily="JetBrains Mono, monospace"
+          fontWeight={700}
+          fill="white"
+          textAnchor="end"
+        >
+          {conf}%
+        </text>
+      </g>
+    </motion.g>
+  );
+}
+
+/** Mediapipe ObjectDetector — generic object bbox (book, cup, bottle, cell phone…)
+ *  Used as proxy for "patient is holding something" on box/glass steps. Real
+ *  brand recognition (Ascorutin/Trahisan) needs server-side YOLO. */
+function RealObjectBBox({
+  object,
+  mirrored,
+  index,
+}: {
+  object: ObjectDetection["objects"][number];
+  mirrored: boolean;
+  index: number;
+}) {
+  const { box, label, confidence } = object;
+  const px = box.x * W;
+  const py = box.y * H;
+  const pw = box.width * W;
+  const ph = box.height * H;
+
+  // Color cycle so multiple detections distinguish visually
+  const palette = ["#F59E5B", "#0EA5E9", "#84CC16"];
+  const stroke = palette[index % palette.length];
+  const conf = Math.round(confidence * 100);
+  const labelText = `${label}`;
+  const labelW = Math.max(120, labelText.length * 9 + 50);
+
+  return (
+    <motion.g initial={{ opacity: 0 }} animate={{ opacity: 0.92 }} exit={{ opacity: 0 }}>
+      <rect
+        x={px}
+        y={py}
+        width={pw}
+        height={ph}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={4}
+        strokeDasharray="14 8"
+        rx={8}
+      />
+      <g transform={mirrored ? `translate(${W}, 0) scale(-1, 1)` : ""}>
+        <rect
+          x={mirrored ? W - px - labelW : px}
+          y={Math.max(0, py - 36)}
+          width={labelW}
+          height={32}
+          rx={8}
+          fill={stroke}
+          opacity={0.95}
+        />
+        <text
+          x={(mirrored ? W - px - labelW : px) + 12}
+          y={py - 14}
+          fontSize={15}
+          fontFamily="JetBrains Mono, monospace"
+          fontWeight={700}
+          fill="white"
+        >
+          {labelText}
+        </text>
+        <text
+          x={(mirrored ? W - px - 12 : px + labelW - 12)}
+          y={py - 14}
+          fontSize={13}
           fontFamily="JetBrains Mono, monospace"
           fontWeight={700}
           fill="white"
