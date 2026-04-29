@@ -300,26 +300,17 @@ function RealObjectBBox({
   );
 }
 
-/** Mediapipe Hands detection — bbox + 21 landmarks per hand */
+/** Mediapipe Hands — only 21 landmarks + skeleton lines (no bbox/label) */
 function RealHandLayer({
   hand,
-  mirrored,
   index,
 }: {
   hand: HandTracking["hands"][number];
-  mirrored: boolean;
+  mirrored: boolean;     // unused after bbox removal but kept in signature
   index: number;
 }) {
-  const { box, landmarks, handedness, confidence } = hand;
-  const px = box.x * W;
-  const py = box.y * H;
-  const pw = box.width * W;
-  const ph = box.height * H;
-
+  const { landmarks } = hand;
   const stroke = index === 0 ? "#A78BFA" : "#F472B6";
-  const label = `${handedness} hand`;
-  const conf = Math.round(confidence * 100);
-  const labelW = Math.max(140, label.length * 9 + 50);
 
   // 21-point hand landmark connections (Mediapipe ordering)
   const CONNECTIONS: [number, number][] = [
@@ -333,19 +324,10 @@ function RealHandLayer({
 
   return (
     <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      {/* Bounding box — beefier (was 4px stroke, now 6) */}
-      <rect
-        x={px}
-        y={py}
-        width={pw}
-        height={ph}
-        fill="none"
-        stroke={stroke}
-        strokeWidth={6}
-        rx={14}
-        filter="drop-shadow(0 0 8px rgba(167, 139, 250, 0.6))"
-      />
-      {/* Skeleton lines — thicker + full opacity (was 2px @ 70%, now 4px @ 100%) */}
+      {/* Hand bbox + label removed per user feedback (2026-04-29) — only the
+          21-point Mediapipe skeleton remains. Cleaner; user wanted ONLY the
+          landmark dots/lines, not a box around the hand. */}
+      {/* Skeleton lines — thicker + full opacity */}
       {CONNECTIONS.map(([a, b], i) => (
         <line
           key={i}
@@ -372,39 +354,8 @@ function RealHandLayer({
           opacity={1}
         />
       ))}
-      {/* Label */}
-      <g transform={mirrored ? `translate(${W}, 0) scale(-1, 1)` : ""}>
-        <rect
-          x={mirrored ? W - px - labelW : px}
-          y={Math.max(0, py - 36)}
-          width={labelW}
-          height={32}
-          rx={8}
-          fill={stroke}
-          opacity={0.95}
-        />
-        <text
-          x={(mirrored ? W - px - labelW : px) + 12}
-          y={py - 14}
-          fontSize={14}
-          fontFamily="JetBrains Mono, monospace"
-          fontWeight={700}
-          fill="white"
-        >
-          {label}
-        </text>
-        <text
-          x={(mirrored ? W - px - 12 : px + labelW - 12)}
-          y={py - 14}
-          fontSize={13}
-          fontFamily="JetBrains Mono, monospace"
-          fontWeight={700}
-          fill="white"
-          textAnchor="end"
-        >
-          {conf}%
-        </text>
-      </g>
+      {/* Hand label removed per user feedback — only skeleton + dots, no
+          'Right hand 96%' rect/text. Confidence is exposed via the side panel. */}
     </motion.g>
   );
 }
